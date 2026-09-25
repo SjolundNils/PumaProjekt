@@ -5,7 +5,7 @@ import type { Database } from './database.types';
 
 export const supabase = createClient<Database>(
   process.env.EXPO_PUBLIC_SUPABASE_URL!,
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
+  process.env.EXPO_PUBLIC_SUPABASE_KEY!,
   {
     auth: {
       storage: AsyncStorage,

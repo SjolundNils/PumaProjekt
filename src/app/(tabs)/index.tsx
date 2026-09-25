@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Link } from 'expo-router';
 
 function getDevMenuHint() {
   if (Platform.OS === 'web') {
@@ -32,12 +33,15 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Test Commit 3!
-          </ThemedText>
-        </ThemedView>
+<ThemedView style={styles.heroSection}>
+  <AnimatedIcon />
+  <ThemedText type="title" style={styles.title}>
+    Test Commit 3!
+  </ThemedText>
+  <Link href="/login">
+    <ThemedText type="link">Till inloggning</ThemedText>
+  </Link>
+</ThemedView>
 
         <ThemedText type="code" style={styles.code}>
           get started
