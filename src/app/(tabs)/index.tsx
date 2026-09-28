@@ -33,16 +33,21 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-<ThemedView style={styles.heroSection}>
-  <AnimatedIcon />
-  <ThemedText type="title" style={styles.title}>
-    Test Commit 3!
-  </ThemedText>
-  <Link href="/login">
-    <ThemedText type="link">Till inloggning</ThemedText>
-  </Link>
-</ThemedView>
-
+        <ThemedView style={styles.heroSection}>
+          <AnimatedIcon />
+          <ThemedText type="title" style={styles.title}>
+            Test Commit 3!
+          </ThemedText>
+          <Link href="/login">
+            <ThemedText type="link">Till inloggning</ThemedText>
+          </Link>
+        </ThemedView>
+        <Link href="/search-test">
+          <ThemedText type="link">Till söktest</ThemedText>
+        </Link>
+        <Link href="/profile-test">
+          <ThemedText type="link">Till profiltest</ThemedText>
+        </Link>
         <ThemedText type="code" style={styles.code}>
           get started
         </ThemedText>
