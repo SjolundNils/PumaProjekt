@@ -79,12 +79,15 @@ export async function signInWithSpotify(): Promise<SignInResult> {
   // skipBrowserRedirect: true innebär att Supabase endast returnerar
   // adressen istället för att själv öppna den, eftersom appen öppnar
   // den i ett inbyggt fönster i nästa steg.
+  // show_dialog: 'true' gör att Spotify alltid visar sin godkännandesida,
+  // där användaren kan se och byta vilket Spotify-konto som används.
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'spotify',
     options: {
       redirectTo,
       scopes: SCOPES,
       skipBrowserRedirect: true,
+      queryParams: { show_dialog: 'true' },
     },
   });
   if (error) throw error;
