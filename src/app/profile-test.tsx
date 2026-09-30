@@ -11,19 +11,20 @@
  * kolumnrättigheterna att endast tillåtna fält kan ändras.
  */
 
+import { signOut } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -178,6 +179,16 @@ export default function ProfileTestScreen() {
           placeholder="Berätta något om dig själv"
           multiline
         />
+
+        <Pressable
+          style={[styles.button, { backgroundColor: '#c0392b' }]}
+          onPress={async () => {
+            await signOut();
+            Alert.alert('Utloggad', 'Du är nu utloggad.');
+          }}
+        >
+          <Text style={styles.buttonText}>Logga ut</Text>
+        </Pressable>
 
         <Pressable style={styles.button} onPress={handleSave} disabled={saving}>
           <Text style={styles.buttonText}>{saving ? 'Sparar...' : 'Spara'}</Text>
