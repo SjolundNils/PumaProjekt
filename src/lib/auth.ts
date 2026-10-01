@@ -42,7 +42,7 @@ WebBrowser.maybeCompleteAuthSession();
  * Om behörigheterna ändras måste befintliga användare logga in igen för
  * att de nya ska gälla.
  */
-const SCOPES = 'playlist-modify-public playlist-modify-private user-library-modify';
+const SCOPES = 'playlist-modify-public playlist-modify-private user-library-modify user-read-recently-played';
 
 /**
  * Utfallet av ett inloggningsförsök.

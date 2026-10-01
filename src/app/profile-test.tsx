@@ -12,6 +12,7 @@
  */
 
 import { signOut } from '@/lib/auth';
+import { getSpotifyTestToken } from '@/lib/spotifyTestToken';
 import { supabase } from '@/lib/supabase';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -44,9 +45,17 @@ type FavoriteAlbum = {
   image_url: string | null;
 };
 
+type SpotifyTrack = {
+  id: string;
+  name: string;
+  artists: { name: string }[];
+  album: { images: { url: string }[];};
+};
+
 export default function ProfileTestScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [albums, setAlbums] = useState<FavoriteAlbum[]>([]);
+  const [recentSongs, setRecentSongs] = useState<SpotifyTrack[]>([]);
   const [displayName, setDisplayName] = useState('');
   const [biography, setBiography] = useState('');
   const [loading, setLoading] = useState(true);
@@ -101,6 +110,7 @@ export default function ProfileTestScreen() {
   useFocusEffect(
     useCallback(() => {
       loadProfile();
+      loadRecentSongs();
     }, [])
   );
 
@@ -216,9 +226,70 @@ export default function ProfileTestScreen() {
             </View>
           ))}
         </View>
+
+
+        <Text style={styles.sectionTitle}>Recent songs</Text>
+
+        {recentSongs.map((song) => (
+          <View key={song.id} style={styles.songRow}>
+            {song.album.images[0] && (
+              <Image
+                source={{ uri: song.album.images[0].url }}
+                style={styles.songCover}
+              />
+            )}
+
+            <View>
+              <Text style={styles.songName}>{song.name}</Text>
+              <Text style={styles.songArtist}>
+                {song.artists.map((artist) => artist.name).join(', ')}
+              </Text>
+            </View>
+          </View>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
+
+  async function loadRecentSongs() {
+    try {
+      // Hämtar Spotify-token som sparades vid inloggningen
+      const token = await getSpotifyTestToken();
+
+      if (!token) {
+        console.log('Ingen Spotify-token hittades.');
+        return;
+      }
+
+      // Frågar Spotify efter de 5 senast spelade låtarna
+      const response = await fetch(
+        'https://api.spotify.com/v1/me/player/recently-played?limit=5',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        console.log('Spotify-fel:', response.status);
+        return;
+      }
+
+      const data = await response.json();
+
+      console.log('Recently played:', data);
+
+      // Spotify returnerar varje låt inuti ett "track"-objekt.
+      const tracks = data.items.map(
+        (item: { track: SpotifyTrack }) => item.track
+      );
+
+      setRecentSongs(tracks);
+    } catch (error) {
+      console.log('Kunde inte hämta senaste låtar:', error);
+    }
+  }
 }
 
 const styles = StyleSheet.create({
@@ -240,4 +311,10 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 20, color: '#999' },
   albumName: { fontSize: 13, fontWeight: '600', marginTop: 4 },
   albumArtist: { fontSize: 12, color: '#666' },
+
+  // Senaste låtar
+  songRow: {flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8},
+  songCover: {width: 50, height: 50, borderRadius: 4},
+  songName: {fontSize: 15, fontWeight: '600'},
+  songArtist: {fontSize: 13, color: '#666'},
 });
