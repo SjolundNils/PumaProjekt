@@ -139,9 +139,8 @@ export async function signInWithSpotify(): Promise<SignInResult> {
     if (saveError) console.warn('Kunde inte spara Spotify-token:', saveError.message);
   }
 
-  // Spotify-nycklarna returneras till anroparen. De hanteras inte av
-  // Supabase-sessionen och förnyas inte automatiskt. De ska skickas till
-  // en Edge Function som sparar dem i tabellen spotify_tokens.
+  // Spotify-nycklarna returneras även till anroparen. Access-nyckeln används
+  // just nu av testskärmarna (se spotifyTestToken.ts).
   return {
     status: 'signed_in',
     providerToken: params.provider_token,
