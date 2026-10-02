@@ -125,6 +125,20 @@ export async function signInWithSpotify(): Promise<SignInResult> {
   });
   if (sessionError) throw sessionError;
 
+  // Sparar Spotify-nycklarna på servern så att spellistor kan synkas utan
+  // att användaren är inloggad. Misslyckas detta ska inloggningen ändå gå
+  // igenom, så felet loggas bara. Måste ske efter setSession, annars finns
+  // ingen inloggad användare som Edge Function kan verifiera.
+  if (params.provider_refresh_token) {
+    const { error: saveError } = await supabase.functions.invoke('save-spotify-token', {
+      body: {
+        access_token: params.provider_token,
+        refresh_token: params.provider_refresh_token,
+      },
+    });
+    if (saveError) console.warn('Kunde inte spara Spotify-token:', saveError.message);
+  }
+
   // Spotify-nycklarna returneras till anroparen. De hanteras inte av
   // Supabase-sessionen och förnyas inte automatiskt. De ska skickas till
   // en Edge Function som sparar dem i tabellen spotify_tokens.
