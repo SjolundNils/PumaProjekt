@@ -36,15 +36,16 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon sf="person.3.fill" />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="add-song">
-        <NativeTabs.Trigger.Label>Dagens låt</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf="plus.circle.fill" />
-      </NativeTabs.Trigger>
-
       <NativeTabs.Trigger name="profile">
         <NativeTabs.Trigger.Label>Profil</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="person.crop.circle.fill" />
       </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="add-song" role="search">
+        <NativeTabs.Trigger.Label>Dagens låt</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="plus" />
+      </NativeTabs.Trigger>
+
     </NativeTabs>
   );
 }
