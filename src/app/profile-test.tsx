@@ -52,10 +52,18 @@ type SpotifyTrack = {
   album: { images: { url: string }[];};
 };
 
+type DailySong = {
+  track_name: string;
+  artist_name: string;
+  image_url: string | null;
+  song_date: string;
+}
+
 export default function ProfileTestScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [albums, setAlbums] = useState<FavoriteAlbum[]>([]);
   const [recentSongs, setRecentSongs] = useState<SpotifyTrack[]>([]);
+  const [dailySong, setDailySong] = useState<DailySong | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [biography, setBiography] = useState('');
   const [loading, setLoading] = useState(true);
@@ -111,8 +119,37 @@ export default function ProfileTestScreen() {
     useCallback(() => {
       loadProfile();
       loadRecentSongs();
+      loadDailySong();
     }, [])
   );
+
+  async function loadDailySong() {
+    try{
+      const {data: userData} = await supabase.auth.getUser();
+
+      if(!userData.user){
+        return;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      const {data, error} = await supabase
+        .from('daily_songs')
+        .select('track_name, artist_name, image_url, song_date')
+        .eq('user_id', userData.user.id)
+        .eq('song_date', today)
+        .maybeSingle();
+
+      if(error){
+        console.log('Kunde inte hämta dagens låt', error);
+        return;
+      }
+
+      setDailySong(data);
+    } catch (error) {
+      console.log('Fel när dagens låt hämtadas', error);
+    }
+  }
 
   /**
    * Sparar ändrat visningsnamn och biografi.
@@ -247,6 +284,32 @@ export default function ProfileTestScreen() {
             </View>
           </View>
         ))}
+
+        <Text style={styles.sectionTitle}>Todays song</Text>
+
+        {dailySong ?(
+          <View style={styles.songRow}>
+            {dailySong.image_url && (
+              <Image
+                source={{ uri: dailySong.image_url }}
+                style={styles.songCover}
+              />
+            )}
+
+            <View>
+              <Text style={styles.songName}>
+                {dailySong.track_name}
+              </Text>
+
+              <Text style={styles.songArtist}>
+                {dailySong.artist_name}
+              </Text>
+            </View>
+        
+          </View>
+        ) : (
+          <Text>No song chosen today.</Text>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

@@ -16,6 +16,7 @@
  */
 
 import { getSpotifyTestToken } from '@/lib/spotifyTestToken';
+import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassContainer, GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { useState } from 'react';
@@ -110,6 +111,50 @@ export default function SearchTestScreen() {
     }
   }
 
+  async function chooseSong(track: SpotifyTrack) {
+  try{
+    console.log('Vald låt: ', track.name);
+
+    //hämtar användaren som är inloggad
+    const {data: userData, error: userError} = await supabase.auth.getUser();
+
+    if (userError || !userData.user){
+      console.log('Ingen användare inloggad');
+      return;
+    }  
+
+    console.log('Användare:', userData.user.id);
+
+    //hämtar albumomslaget från Spotify-resultatet.
+    const image = track.album.images[0];
+
+    //dagens datum i formatet YYYY-MM-DD.
+    const today = new Date().toISOString().split('T')[0];
+
+    //sparar den valda låten i databasen.
+    const { error } = await supabase
+      .from('daily_songs')
+      .insert({
+        user_id: userData.user.id,
+        song_date: today,
+        spotify_track_id: track.id,
+        track_name: track.name,
+        artist_name: track.artists.map((artist) => artist.name).join(', '),
+        image_url: image?.url ?? null,
+      });
+
+    if (error) {
+      console.log('Kunde inte spara låten:', error);
+      return;
+    }
+
+    console.log('Låten sparades:', track.name);
+  } catch (error) {
+    console.log('Fel när låten skulle sparas:', error);
+  }
+
+  }
+
   return (
     // Endast övre kanten här. Den nedre hanteras av sökfältet självt.
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -138,8 +183,12 @@ export default function SearchTestScreen() {
             const image = item.album.images[item.album.images.length - 1];
 
             return (
-              <View style={styles.row}>
+              <Pressable
+                style={styles.row}
+                onPress={() => chooseSong(item)}
+              >
                 {image && <Image source={{ uri: image.url }} style={styles.cover} />}
+
                 <View style={styles.rowText}>
                   <Text style={styles.trackName} numberOfLines={1}>
                     {item.name}
@@ -148,7 +197,8 @@ export default function SearchTestScreen() {
                     {item.artists.map((artist) => artist.name).join(', ')}
                   </Text>
                 </View>
-              </View>
+
+              </Pressable>
             );
           }}
         />
