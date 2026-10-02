@@ -112,8 +112,8 @@ Deno.serve(async (req) => {
       const created = await spotify("/me/playlists", token, {
         method: "POST",
         body: JSON.stringify({
-          name: `${group.name} – Daily Picks`,
-          description: "Dagens låtar från gänget",
+          name: `${group.name} – Daylist`,
+          description: "Today's hits from the group",
           public: false,
         }),
       });
