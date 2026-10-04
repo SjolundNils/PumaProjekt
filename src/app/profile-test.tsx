@@ -17,15 +17,15 @@ import { supabase } from '@/lib/supabase';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
-	ActivityIndicator,
-	Alert,
-	Image,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	TextInput,
-	View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -36,6 +36,11 @@ type Profile = {
   display_name: string | null;
   avatar_url: string | null;
   biography: string | null;
+};
+
+type SpotifyProfile = {
+  user_name: string | null;
+  image_url: string | null;
 };
 
 type FavoriteAlbum = {
@@ -61,6 +66,7 @@ type DailySong = {
 
 export default function ProfileTestScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [spotifyProfile, setSpotifyProfile] = useState<SpotifyProfile | null>(null);
   const [albums, setAlbums] = useState<FavoriteAlbum[]>([]);
   const [recentSongs, setRecentSongs] = useState<SpotifyTrack[]>([]);
   const [dailySong, setDailySong] = useState<DailySong | null>(null);
@@ -112,12 +118,61 @@ export default function ProfileTestScreen() {
     }
   }
 
+  async function loadSpotifyProfile() {
+    setLoading(true);
+
+    try {
+      const token = await getSpotifyTestToken();
+      if (!token) {
+        const message = 'Ingen Spotify-nyckel hittades. Logga in igen.';
+        Alert.alert('Kunde inte hämta profilen', message);
+        return;
+      }
+
+      // Endpoint for the current logged-in user's profile
+      const url = 'https://api.spotify.com/v1/me';
+
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.status === 401) {
+        const message = 'Spotify-nyckeln har gått ut. Logga in igen.';
+        Alert.alert('Kunde inte hämta profilen', message);
+        return;
+      }
+
+      if (!response.ok) {
+        const message = `Spotify svarade med fel ${response.status}.`;
+        Alert.alert('Kunde inte hämta profilen', message);
+        return;
+      }
+
+      const data = await response.json();
+
+      // Tar ut profilbildens URL eller null om den inte finns
+      const profileImageUrl = data.images && data.images.length > 0 ? data.images[0].url : null;
+      const displayName = data.display_name && data.display_name.length > 0 ? data.display_name : null;
+
+      setSpotifyProfile({ user_name: profileImageUrl, image_url: displayName });
+
+      console.log('Profilbildens URL:', profileImageUrl);
+      console.log('Visningsnamn:', displayName);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Okänt fel';
+      Alert.alert('Kunde inte hämta profilen', message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // Laddar om profilen varje gång skärmen visas, även när användaren
   // kommer tillbaka från en annan skärm. Det gör att nya album syns direkt
   // efter att de valts i nästa steg.
   useFocusEffect(
     useCallback(() => {
       loadProfile();
+      loadSpotifyProfile();
       loadRecentSongs();
       loadDailySong();
     }, [])
