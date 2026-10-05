@@ -25,6 +25,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -50,6 +51,13 @@ type FavoriteAlbum = {
   image_url: string | null;
 };
 
+type SpotifyAlbumSearchResult = {
+  id: string;
+  album_name: string;
+  artist_name: string;
+  image_url: string | null;
+};
+
 type SpotifyTrack = {
   id: string;
   name: string;
@@ -68,6 +76,9 @@ export default function ProfileTestScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [spotifyProfile, setSpotifyProfile] = useState<SpotifyProfile | null>(null);
   const [albums, setAlbums] = useState<FavoriteAlbum[]>([]);
+  const [spotifyAlbumSearchResult, setSpotifyAlbumSearchResult] = useState<SpotifyAlbumSearchResult[]>([]);
+  const [albumQuery, setAlbumQuery] = useState('');
+  const [editAlbumIndex, setEditAlbumIndex] = useState<number | null>(null);
   const [recentSongs, setRecentSongs] = useState<SpotifyTrack[]>([]);
   const [dailySong, setDailySong] = useState<DailySong | null>(null);
   const [displayName, setDisplayName] = useState('');
@@ -129,7 +140,7 @@ export default function ProfileTestScreen() {
         return;
       }
 
-      // Endpoint for the current logged-in user's profile
+      // URL för inloggade användarens profil
       const url = 'https://api.spotify.com/v1/me';
 
       const response = await fetch(url, {
@@ -206,6 +217,72 @@ export default function ProfileTestScreen() {
     }
   }
 
+  const searchAlbum = async (text: string) => {
+    setAlbumQuery(text);
+
+    const trimmed = text.trim();
+    if (!trimmed) {
+      setSpotifyAlbumSearchResult([]); // Rensa resultat om rutan tömms
+      return;
+    }
+
+    const token = await getSpotifyTestToken();
+    if (!token) {
+      const message = 'Ingen Spotify-nyckel hittades. Logga in igen.';
+      Alert.alert('Kunde inte hämta profilen', message);
+      return;
+    }
+  
+    // URL för söka med type=album
+    const url =
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(trimmed)}` +
+      `&type=album&limit=10`;
+  
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  
+    if (response.status === 401) {
+      const message = 'Spotify-nyckeln har gått ut. Logga in igen.';
+      Alert.alert('Kunde inte hämta profilen', message);
+      return;
+    }
+    if (!response.ok) {
+      const message = `Spotify svarade med fel ${response.status}.`;
+      Alert.alert('Kunde inte hämta profilen', message);
+      return;
+    }
+  
+    const data = await response.json();
+
+    const albumList: SpotifyAlbumSearchResult[] = data.albums.items.map((album: any) => ({
+      id: album.id,
+      album_name: album.name,
+      artist_name: album.artists.map((artist: any) => artist.name).join(', '),
+      image_url: album.images && album.images.length > 0 ? album.images[0].url : null,
+    }));
+
+    console.log('Search Results:', albumList);
+    setSpotifyAlbumSearchResult(albumList);
+  };
+
+  const selectFavoriteAlbum = (selected: SpotifyAlbumSearchResult) => {
+    if (editAlbumIndex === null) return;
+
+    const newAlbum: FavoriteAlbum = {
+      position: editAlbumIndex,
+      album_name: selected.album_name,
+      artist_name: selected.artist_name,
+      image_url: selected.image_url,
+    };
+
+    setAlbums((prev) => [...prev.filter((a) => a.position !== editAlbumIndex), newAlbum]);
+    console.log('setAlbums:', albums);
+    setEditAlbumIndex(null);
+    setAlbumQuery('');
+    setSpotifyAlbumSearchResult([]);
+  };
+
   /**
    * Sparar ändrat visningsnamn och biografi.
    */
@@ -256,6 +333,45 @@ export default function ProfileTestScreen() {
     return albums.find((album) => album.position === position) ?? null;
   });
 
+  if (editAlbumIndex !== null) {
+    return (
+      <View style={styles.container}>
+        <TouchableOpacity onPress={() => setEditAlbumIndex(null)}>
+          <Text style={styles.label}>← Tillbaka</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.title}>Välj album för plats {editAlbumIndex}</Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Sök efter album"
+          placeholderTextColor="#888"
+          value={albumQuery}
+          onChangeText={searchAlbum}
+        />
+
+        {spotifyAlbumSearchResult.map((item) => (
+          <TouchableOpacity
+            key={item.id}
+            style={styles.input}
+            onPress={() => selectFavoriteAlbum(item)}
+          >
+            {item.image_url && (
+              <Image
+                source={{ uri: item.image_url }}
+                style={{ width: 48, height: 48, borderRadius: 4 }}
+              />
+            )}
+            <View>
+              <Text style={styles.input}>{item.album_name}</Text>
+              <Text style={styles.input}>{item.artist_name}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -300,6 +416,10 @@ export default function ProfileTestScreen() {
         <View style={styles.grid}>
           {slots.map((album, index) => (
             <View key={index} style={styles.slot}>
+              <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setEditAlbumIndex(index + 1)}
+            >
               {album?.image_url ? (
                 <Image source={{ uri: album.image_url }} style={styles.albumCover} />
               ) : (
@@ -307,6 +427,7 @@ export default function ProfileTestScreen() {
                   <Text style={styles.emptyText}>{index + 1}</Text>
                 </View>
               )}
+              </TouchableOpacity>
               <Text style={styles.albumName} numberOfLines={1}>
                 {album?.album_name ?? 'Tom plats'}
               </Text>
