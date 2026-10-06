@@ -45,6 +45,7 @@ type SpotifyProfile = {
 };
 
 type FavoriteAlbum = {
+  spotify_album_id: string;
   position: number;
   album_name: string;
   artist_name: string;
@@ -109,7 +110,7 @@ export default function ProfileTestScreen() {
           .single(),
         supabase
           .from('favorite_albums')
-          .select('position, album_name, artist_name, image_url')
+          .select('spotify_album_id, position, album_name, artist_name, image_url')
           .eq('user_id', userId)
           .order('position'),
       ]);
@@ -270,6 +271,7 @@ export default function ProfileTestScreen() {
     if (editAlbumIndex === null) return;
 
     const newAlbum: FavoriteAlbum = {
+      spotify_album_id: selected.id,
       position: editAlbumIndex,
       album_name: selected.album_name,
       artist_name: selected.artist_name,
@@ -292,16 +294,47 @@ export default function ProfileTestScreen() {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return;
 
-      const { error } = await supabase
+      const userId = userData.user.id;
+
+      // Profilen och albumen hämtas parallellt, eftersom de är oberoende.
+      const [profileResult, albumsDeleteResult] = await Promise.all([
+        supabase
         .from('profiles')
         .update({
           display_name: displayName.trim() || null,
           biography: biography.trim() || null,
         })
-        .eq('id', userData.user.id);
+        .eq('id', userData.user.id),
+        // ta bort alla album för användaren innan man sätter in nya
+        // detta är bara nödvändigt om man tillåter att ta bort favorite albums
+       supabase
+        .from('favorite_albums')
+        .delete()
+        .eq('user_id', userData.user.id),
+      ]);
 
-      if (error) throw error;
-      Alert.alert('Sparat', 'Profilen har uppdaterats.');
+      if (profileResult.error) throw profileResult.error;
+      if (albumsDeleteResult.error) throw albumsDeleteResult.error;
+
+      if (albums.length > 0) {
+        const albumsToSave = albums.map((album) => ({
+          user_id: userId,
+          position: album.position,
+          spotify_album_id: album.spotify_album_id ?? null,
+          album_name: album.album_name,
+          artist_name: album.artist_name,
+          image_url: album.image_url,
+        }));
+        
+        // update eller insert favorite albums. Där userId och positioner passar.
+        const { error: upsertError } = await supabase
+          .from('favorite_albums')
+          .upsert(albumsToSave, { onConflict: 'user_id, position' });
+
+        if (upsertError) throw upsertError;
+      }
+
+      Alert.alert('Sparat', 'Profilen och favoritalbum har uppdaterats.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Okänt fel';
       Alert.alert('Kunde inte spara', message);
