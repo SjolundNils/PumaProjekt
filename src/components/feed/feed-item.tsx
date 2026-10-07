@@ -2,12 +2,13 @@
  * feed-item.tsx
  *
  * Visar en händelse i flödet: aktörens profilbild, en text som beror på
- * händelsens typ, tiden sedan händelsen och låtens omslag.
+ * händelsens typ, tiden sedan händelsen och ett omslag.
  *
- * Händelsetyper som inte stöds än visas inte alls (komponenten returnerar
+ * Händelsetyper som inte stöds visas inte alls (komponenten returnerar
  * null), så att nya typer i databasen inte ger trasiga rader i flödet.
  *
- * Ett tryck på raden öppnar låten i Spotify.
+ * Ett tryck på raden öppnar låten eller albumet i Spotify, om händelsen
+ * har någon av dem.
  */
 
 import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
@@ -19,20 +20,49 @@ type Props = {
   event: FeedEvent;
 };
 
+/**
+ * Fälten som kan finnas i metadata. Vilka som är ifyllda beror på
+ * händelsetypen (se triggerna i databasen).
+ */
+type EventMetadata = {
+  rating?: number;
+  match?: 'track' | 'artist';
+  spotify_album_id?: string;
+  album_name?: string;
+  artist_name?: string;
+  image_url?: string;
+};
+
 export function FeedItem({ event }: Props) {
   const text = describeEvent(event);
   if (!text) return null;
 
   const song = event.song;
+  const metadata = (event.metadata ?? {}) as EventMetadata;
 
-  /** Öppnar låten i Spotify-appen, eller på webben om appen saknas. */
-  function openInSpotify() {
-    if (!song) return;
-    Linking.openURL(`https://open.spotify.com/track/${song.spotify_track_id}`);
-  }
+  // Låtens omslag, eller albumets omslag för favoritalbum (som saknar låt).
+  const coverUrl = song?.image_url ?? metadata.image_url ?? null;
+
+  // Länken som öppnas vid tryck: låten om händelsen har en, annars albumet.
+  const spotifyUrl = song
+    ? `https://open.spotify.com/track/${song.spotify_track_id}`
+    : metadata.spotify_album_id
+      ? `https://open.spotify.com/album/${metadata.spotify_album_id}`
+      : null;
+
+  // Undertext: låten, eller albumet för favoritalbum.
+  const subtitle = song
+    ? `${song.track_name} · ${song.artist_name}`
+    : metadata.album_name
+      ? `${metadata.album_name} · ${metadata.artist_name ?? ''}`
+      : null;
 
   return (
-    <Pressable style={styles.row} onPress={openInSpotify} disabled={!song}>
+    <Pressable
+      style={styles.row}
+      onPress={() => spotifyUrl && Linking.openURL(spotifyUrl)}
+      disabled={!spotifyUrl}
+    >
       {event.actor?.avatar_url ? (
         <Image source={{ uri: event.actor.avatar_url }} style={styles.avatar} />
       ) : (
@@ -41,38 +71,66 @@ export function FeedItem({ event }: Props) {
 
       <View style={styles.body}>
         <ThemedText>{text}</ThemedText>
-        {song && (
-          <ThemedText style={styles.songText} numberOfLines={1}>
-            {song.track_name} · {song.artist_name}
+        {subtitle && (
+          <ThemedText style={styles.subtitle} numberOfLines={1}>
+            {subtitle}
           </ThemedText>
         )}
         <ThemedText style={styles.time}>{formatRelativeTime(event.created_at)}</ThemedText>
       </View>
 
-      {song?.image_url && <Image source={{ uri: song.image_url }} style={styles.cover} />}
+      {coverUrl && <Image source={{ uri: coverUrl }} style={styles.cover} />}
     </Pressable>
   );
 }
 
 /**
- * Returnerar texten för en händelse, eller null om typen inte stöds än.
+ * Returnerar texten för en händelse, eller null om typen inte stöds.
  *
- * Nya händelsetyper läggs till här.
+ * Nya händelsetyper läggs till här, och i SUPPORTED_TYPES i lib/feed.ts.
  */
 function describeEvent(event: FeedEvent): string | null {
-  const name = event.actor?.display_name ?? 'Någon';
+  const name = event.actor?.display_name ?? 'Someone';
+  const group = event.group?.name ?? 'a group';
+  const metadata = (event.metadata ?? {}) as EventMetadata;
 
   switch (event.type) {
     case 'song_chosen':
-      return `${name} valde dagens låt`;
+      return `${name} picked today's song`;
 
-    case 'song_rated': {
-      // metadata är JSON i databasen. För song_rated innehåller den betyget.
-      const rating = (event.metadata as { rating?: number } | null)?.rating;
-      return rating
-        ? `${name} gav din låt ${rating.toString().replace('.', ',')} ★`
-        : `${name} betygsatte din låt`;
-    }
+    case 'song_rated':
+      return metadata.rating
+        ? `${name} rated your song ${metadata.rating} ★`
+        : `${name} rated your song`;
+
+    case 'group_all_rated':
+      return `Everyone in ${group} has rated your song`;
+
+    case 'song_match':
+      return metadata.match === 'track'
+        ? `You and ${name} picked the same song today!`
+        : `You and ${name} picked the same artist today`;
+
+    case 'favorite_album_changed':
+      return `${name} added a new favorite album`;
+
+    case 'friend_request_received':
+      return `${name} wants to be your friend`;
+
+    case 'friend_request_accepted':
+      return `${name} accepted your friend request`;
+
+    case 'group_invite_received':
+      return `${name} invited you to ${group}`;
+
+    case 'member_joined_group':
+      return `${name} joined ${group}`;
+
+    case 'joined_via_your_link':
+      return `${name} joined ${group} through your invite`;
+
+    case 'group_playlist_complete':
+      return `Everyone in ${group} has picked today's song. The playlist is complete!`;
 
     default:
       return null;
@@ -80,8 +138,8 @@ function describeEvent(event: FeedEvent): string | null {
 }
 
 /**
- * Formaterar en tidpunkt som relativ tid, till exempel "nyss",
- * "för 5 min sedan" eller "igår".
+ * Formaterar en tidpunkt som relativ tid, till exempel "just now",
+ * "5m ago" eller "yesterday".
  */
 function formatRelativeTime(iso: string): string {
   const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -89,12 +147,12 @@ function formatRelativeTime(iso: string): string {
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
 
-  if (seconds < 60) return 'nyss';
-  if (minutes < 60) return `för ${minutes} min sedan`;
-  if (hours < 24) return `för ${hours} h sedan`;
-  if (days === 1) return 'igår';
-  if (days < 7) return `för ${days} dagar sedan`;
-  return new Date(iso).toLocaleDateString('sv-SE');
+  if (seconds < 60) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-GB');
 }
 
 const styles = StyleSheet.create({
@@ -102,7 +160,7 @@ const styles = StyleSheet.create({
   avatar: { width: 40, height: 40, borderRadius: 20 },
   avatarPlaceholder: { backgroundColor: '#ccc' },
   body: { flex: 1, gap: 2 },
-  songText: { fontSize: 14, opacity: 0.8 },
+  subtitle: { fontSize: 14, opacity: 0.8 },
   time: { fontSize: 12, opacity: 0.5 },
   cover: { width: 52, height: 52, borderRadius: 4 },
 });

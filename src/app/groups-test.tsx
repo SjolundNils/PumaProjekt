@@ -15,6 +15,8 @@ export default function GroupsTestScreen() {
     // Hämta användaren som är inloggad
     const{data: userData} = await supabase.auth.getUser();
 
+    console.log('Inloggad user ID:', userData.user?.id);
+
     if (!userData.user){
         return;
     }
