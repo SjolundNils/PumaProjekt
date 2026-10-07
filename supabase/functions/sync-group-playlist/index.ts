@@ -116,35 +116,51 @@ async function syncGroup(
   return playlistId;
 }
 
+// "Dagen" byter klockan 04:00 svensk tid. Före 04:00 räknas det som gårdagen.
+function appDay(): string {
+  const shifted = new Date(Date.now() - 4 * 60 * 60 * 1000);
+  return shifted.toLocaleDateString("sv-SE", { timeZone: "Europe/Stockholm" });
+}
+
 Deno.serve(async (req) => {
   try {
-    // Vem anropar? Måste vara inloggad och medlem i gruppen.
-    const jwt = req.headers.get("Authorization")?.replace("Bearer ", "");
-    const { data: auth } = await supabase.auth.getUser(jwt);
-    if (!auth.user) return new Response("Unauthorized", { status: 401 });
-
     const body = await req.json().catch(() => ({}));
     const requestedGroupId: string | undefined = body.group_id;
 
-	// Vilka grupper är användaren med i? (Det är bara de hen får synka.)
-    const { data: myMemberships } = await supabase
-      .from("group_members")
-      .select("group_id")
-      .eq("user_id", auth.user.id);
-    let groupIds = (myMemberships ?? []).map((m) => m.group_id as string);
+    // Anrop från det nattliga schemat: hemlig nyckel i stället för inloggning
+    const cronSecret = Deno.env.get("CRON_SECRET");
+    const isCron = !!cronSecret && req.headers.get("x-cron-secret") === cronSecret;
 
-	if (requestedGroupId) {
-      if (!groupIds.includes(requestedGroupId)) {
-        return new Response("Forbidden", { status: 403 });
+    let groupIds: string[];
+
+    if (isCron) {
+      // Nattjobbet synkar alla grupper
+      const { data: all } = await supabase.from("groups").select("id");
+      groupIds = (all ?? []).map((g: { id: string }) => g.id);
+    } else {
+      // Vanligt anrop från appen: användaren måste vara inloggad
+      const jwt = req.headers.get("Authorization")?.replace("Bearer ", "");
+      const { data: auth } = await supabase.auth.getUser(jwt);
+      if (!auth.user) return new Response("Unauthorized", { status: 401 });
+
+      const { data: myMemberships } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("user_id", auth.user.id);
+      groupIds = (myMemberships ?? []).map((m: { group_id: string }) => m.group_id);
+
+      if (requestedGroupId) {
+        if (!groupIds.includes(requestedGroupId)) {
+          return new Response("Forbidden", { status: 403 });
+        }
+        groupIds = [requestedGroupId];
       }
-      groupIds = [requestedGroupId];
     }
+
     if (groupIds.length === 0) return Response.json({ ok: true, results: [] });
 
-    // Dagens datum i svensk tid (inte UTC), annars blir "idag" fel runt midnatt
-    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Stockholm" });
+    const today = appDay();
 
-	// Hämta grupper, medlemmar och dagens låtar i så få frågor som möjligt
     const { data: groups } = await supabase
       .from("groups")
       .select("id, name, owner_id, spotify_playlist_id")
@@ -155,31 +171,31 @@ Deno.serve(async (req) => {
       .select("group_id, user_id")
       .in("group_id", groupIds);
 
-    const allUserIds = [...new Set((allMembers ?? []).map((m) => m.user_id as string))];
+    const allUserIds = [...new Set((allMembers ?? []).map((m: { user_id: string }) => m.user_id))];
     const { data: songs } = await supabase
       .from("daily_songs")
       .select("user_id, spotify_track_id")
       .in("user_id", allUserIds)
       .eq("song_date", today)
       .order("chosen_at", { ascending: true });
-	
-    // En token per ägare räcker, även om hen äger flera grupper
+
     const tokens = new Map<string, Promise<string>>();
     const tokenFor = (userId: string) => {
       if (!tokens.has(userId)) tokens.set(userId, getAccessToken(userId));
       return tokens.get(userId)!;
     };
 
-    // Synka grupp för grupp. Ett fel i en grupp stoppar inte de andra.
     const results = [];
     for (const group of (groups ?? []) as Group[]) {
       try {
         const memberIds = new Set(
-          (allMembers ?? []).filter((m) => m.group_id === group.id).map((m) => m.user_id)
+          (allMembers ?? [])
+            .filter((m: { group_id: string }) => m.group_id === group.id)
+            .map((m: { user_id: string }) => m.user_id)
         );
         const uris = (songs ?? [])
-          .filter((s) => memberIds.has(s.user_id))
-          .map((s) => `spotify:track:${s.spotify_track_id}`);
+          .filter((s: { user_id: string }) => memberIds.has(s.user_id))
+          .map((s: { spotify_track_id: string }) => `spotify:track:${s.spotify_track_id}`);
 
         const playlistId = await syncGroup(group, uris, tokenFor);
         results.push({ group_id: group.id, ok: true, playlistId, tracks: uris.length });
