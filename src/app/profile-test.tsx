@@ -166,7 +166,7 @@ export default function ProfileTestScreen() {
       const profileImageUrl = data.images && data.images.length > 0 ? data.images[0].url : null;
       const displayName = data.display_name && data.display_name.length > 0 ? data.display_name : null;
 
-      setSpotifyProfile({ user_name: profileImageUrl, image_url: displayName });
+      setSpotifyProfile({ user_name: displayName, image_url: profileImageUrl});
 
       console.log('Profilbildens URL:', profileImageUrl);
       console.log('Visningsnamn:', displayName);
@@ -414,9 +414,11 @@ export default function ProfileTestScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Profiltest</Text>
 
-        {profile.avatar_url && (
-          <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-        )}
+        <View style={styles.profileImageContainer}>
+          {spotifyProfile?.image_url && (
+            <Image source={{ uri: spotifyProfile.image_url }} style={styles.avatar} />
+          )}
+        </View>
 
         <Text style={styles.label}>Visningsnamn</Text>
         <TextInput
@@ -559,6 +561,12 @@ export default function ProfileTestScreen() {
         }
       );
 
+      if (response.status === 401) {
+        const message = 'Spotify-nyckeln har gått ut. Logga in igen.';
+        Alert.alert('Kunde inte hämta profilen', message);
+        return;
+      }
+
       if (!response.ok) {
         console.log('Spotify-fel:', response.status);
         return;
@@ -599,6 +607,7 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 20, color: '#999' },
   albumName: { fontSize: 13, fontWeight: '600', marginTop: 4 },
   albumArtist: { fontSize: 12, color: '#666' },
+  profileImageContainer: { width: '100%', alignItems: 'center', marginTop: 8, marginBottom: 8 },
 
   // Senaste låtar
   songRow: {flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8},
