@@ -96,6 +96,9 @@ export default function FeedScreen() {
                 <Link href="/profile-test">
                   <ThemedText type="link">Profiltest</ThemedText>
                 </Link>
+                <Link href="/groups-test">
+                  <ThemedText type="link">Groupstest</ThemedText>
+                </Link>
               </View>
 
               {errorMessage && <ThemedText style={styles.error}>{errorMessage}</ThemedText>}
