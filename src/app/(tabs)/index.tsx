@@ -99,7 +99,7 @@ export default function FeedScreen() {
                 <Link href="/groups-test">
                   <ThemedText type="link">Groupstest</ThemedText>
                 </Link>
-				        <Link href="/friends-test">
+				<Link href="/friends-test">
                   <ThemedText type="link">Friendstest</ThemedText>
                 </Link>
                 <Link href="/rate/85">
