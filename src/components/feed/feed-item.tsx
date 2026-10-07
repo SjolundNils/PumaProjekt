@@ -8,16 +8,25 @@
  * null), så att nya typer i databasen inte ger trasiga rader i flödet.
  *
  * Ett tryck på raden öppnar låten eller albumet i Spotify, om händelsen
- * har någon av dem.
+ * har någon av dem. På valda låtar från andra visas en RateButton under
+ * låttiteln (se components/rating/rate-button.tsx).
  */
 
 import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
 
+import { RateButton } from '@/components/rating/rate-button';
 import { ThemedText } from '@/components/themed-text';
 import type { FeedEvent } from '@/lib/feed';
 
 type Props = {
   event: FeedEvent;
+  /**
+   * Den inloggade användarens id. Används för att inte visa
+   * betygsknappen på användarens egen låt.
+   */
+  currentUserId?: string | null;
+  /** Användarens eget betyg på låten, om hen har betygsatt den. */
+  myRating?: number;
 };
 
 /**
@@ -33,7 +42,7 @@ type EventMetadata = {
   image_url?: string;
 };
 
-export function FeedItem({ event }: Props) {
+export function FeedItem({ event, currentUserId, myRating }: Props) {
   const text = describeEvent(event);
   if (!text) return null;
 
@@ -57,6 +66,10 @@ export function FeedItem({ event }: Props) {
       ? `${metadata.album_name} · ${metadata.artist_name ?? ''}`
       : null;
 
+  // Betygsknappen visas på valda låtar, men inte på användarens egna.
+  const showRating =
+    event.type === 'song_chosen' && song !== null && event.actor?.id !== currentUserId;
+
   return (
     <Pressable
       style={styles.row}
@@ -76,6 +89,10 @@ export function FeedItem({ event }: Props) {
             {subtitle}
           </ThemedText>
         )}
+
+        {/* Egen tryckyta inuti raden: öppnar betygsrutan istället för Spotify. */}
+        {showRating && song && <RateButton dailySongId={song.id} myRating={myRating} />}
+
         <ThemedText style={styles.time}>{formatRelativeTime(event.created_at)}</ThemedText>
       </View>
 
