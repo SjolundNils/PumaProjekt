@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 type Group = {
     id: string;
     name: string;
-    image_url: string | null;
+    avatar_url: string | null;
 }
 
 export default function GroupsTestScreen() {
@@ -14,6 +14,8 @@ export default function GroupsTestScreen() {
   async function loadGroups (){
     // Hämta användaren som är inloggad
     const{data: userData} = await supabase.auth.getUser();
+
+    console.log('Inloggad user ID:', userData.user?.id);
 
     if (!userData.user){
         return;
@@ -26,7 +28,7 @@ export default function GroupsTestScreen() {
             groups(
                 id,
                 name,
-                image_url'
+                avatar_url
             )
         `)
         .eq('user_id', userData.user.id);
