@@ -21,8 +21,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset } from '@/constants/theme';
 import { getErrorMessage } from '@/lib/errors';
+import { supabase } from '@/lib/supabase';
+
 
 import { fetchFeed, type FeedEvent } from '@/lib/feed';
+import { fetchMyRatings } from '@/lib/ratings';
 
 export default function FeedScreen() {
   const [events, setEvents] = useState<FeedEvent[]>([]);
@@ -34,16 +37,29 @@ export default function FeedScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [myRatings, setMyRatings] = useState<Record<number, number>>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   /**
    * Hämtar flödet och ersätter listan.
    */
   const loadFeed = useCallback(async () => {
+
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      setCurrentUserId(sessionData.session?.user.id ?? null);
+
       const data = await fetchFeed();
+
+      // Hämtar användarens betyg för alla låtar som finns i flödet.
+      const songIds = [...new Set(data.flatMap((event) => (event.song ? [event.song.id] : [])))];
+      const ratings = await fetchMyRatings(songIds);
+
       setEvents(data);
+      setMyRatings(ratings);
       setErrorMessage(null);
     } catch (error) {
+      console.log('Flödesfel:', error);
       setErrorMessage(getErrorMessage(error));
     } finally {
       setLoading(false);
@@ -79,7 +95,11 @@ export default function FeedScreen() {
         <FlatList
           data={events}
           keyExtractor={(event) => event.id.toString()}
-          renderItem={({ item }) => <FeedItem event={item} />}
+          renderItem={({ item }) => <FeedItem
+            event={item}
+            currentUserId={currentUserId}
+            myRating={item.song ? myRatings[item.song.id] : undefined}
+          />}
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           ListHeaderComponent={
@@ -87,11 +107,11 @@ export default function FeedScreen() {
               <ThemedText type="title">Flöde</ThemedText>
 
               {/* TEST: tillfälliga länkar till testskärmarna. Tas bort senare. */}
-              <ScrollView 
+              <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.testLinks}
-                >
+              >
                 <Link href="/login">
                   <ThemedText type="link">Inloggning</ThemedText>
                 </Link>
@@ -104,7 +124,7 @@ export default function FeedScreen() {
                 <Link href="/groups-test">
                   <ThemedText type="link">Groupstest</ThemedText>
                 </Link>
-				<Link href="/friends-test">
+                <Link href="/friends-test">
                   <ThemedText type="link">Friendstest</ThemedText>
                 </Link>
                 <Link href="/rate/85">
