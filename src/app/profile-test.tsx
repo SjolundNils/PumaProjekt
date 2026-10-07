@@ -359,6 +359,10 @@ export default function ProfileTestScreen() {
     );
   }
 
+  const removeFavoriteAlbum = (position: number) => {
+  setAlbums((prev) => prev.filter((album) => album.position !== position));
+  };
+
   // Bygger en lista med exakt sex platser. Platser utan album blir null,
   // så att tomma platser också kan visas.
   const slots = Array.from({ length: ALBUM_SLOTS }, (_, index) => {
@@ -449,18 +453,30 @@ export default function ProfileTestScreen() {
         <View style={styles.grid}>
           {slots.map((album, index) => (
             <View key={index} style={styles.slot}>
-              <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setEditAlbumIndex(index + 1)}
-            >
-              {album?.image_url ? (
-                <Image source={{ uri: album.image_url }} style={styles.albumCover} />
-              ) : (
-                <View style={[styles.albumCover, styles.emptyCover]}>
-                  <Text style={styles.emptyText}>{index + 1}</Text>
-                </View>
-              )}
-              </TouchableOpacity>
+              <View>
+                <TouchableOpacity
+                 activeOpacity={0.8}
+                 onPress={() => setEditAlbumIndex(index + 1)}
+                >
+                {album?.image_url ? (
+                  <Image source={{ uri: album.image_url }} style={styles.albumCover} />
+                ) : (
+                  <View style={[styles.albumCover, styles.emptyCover]}>
+                    <Text style={styles.emptyText}>{index + 1}</Text>
+                  </View>
+                )}
+                </TouchableOpacity>
+               {/* knapp för att ta bort favoritalbum.*/}
+               {album && (
+                <TouchableOpacity
+                 style={styles.removeButton}
+                 onPress={() => removeFavoriteAlbum(index + 1)}
+               >
+                <Text style={styles.removeButtonText}>✕</Text>
+               </TouchableOpacity>
+               )}
+              </View>
+              
               <Text style={styles.albumName} numberOfLines={1}>
                 {album?.album_name ?? 'Tom plats'}
               </Text>
@@ -589,4 +605,23 @@ const styles = StyleSheet.create({
   songCover: {width: 50, height: 50, borderRadius: 4},
   songName: {fontSize: 15, fontWeight: '600'},
   songArtist: {fontSize: 13, color: '#666'},
+
+  removeButton: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: 32,
+    height: 32,
+    marginTop: -16,
+    marginLeft: -16,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
