@@ -11,20 +11,48 @@
  * Utseendet är medvetet enkelt. Det ersätts av hi-fi-designen när
  * inloggningsflödet är verifierat.
  */
+import { ThemedText } from '@/components/themed-text';
 import { signInWithSpotify } from '@/lib/auth';
 import { saveSpotifyTestToken } from '@/lib/spotifyTestToken';
+import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
 
 export default function LoginScreen() {
     // Sant medan inloggningen pågår. Används för att visa en laddningsindikator
     // och förhindra att användaren startar flera inloggningar samtidigt.
     const [loading, setLoading] = useState(false);
+    const [hasValidSession, setHasValidSession] = useState<boolean | null>(null);
 
     // Sant när Supabase har skickat ett bekräftelsemejl som användaren
     // måste klicka på innan inloggning är möjlig.
     const [needsVerification, setNeedsVerification] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+
+        supabase.auth.getSession().then(({ data, error }) => {
+            if (error) {
+                if (mounted) setHasValidSession(false);
+                return;
+            }
+            if (mounted) setHasValidSession(Boolean(data.session));
+        });
+
+        const { data } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                setHasValidSession(Boolean(session));
+            } else if (event === 'SIGNED_OUT') {
+                setHasValidSession(false);
+            }
+        });
+
+        return () => {
+            mounted = false;
+            data.subscription.unsubscribe();
+        };
+    }, []);
 
     /**
      * Startar inloggningen och agerar utifrån utfallet.
@@ -61,35 +89,57 @@ export default function LoginScreen() {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Välkommen</Text>
+            <ThemedText style={styles.title}>Daylist</ThemedText>
+            <ThemedText style={styles.subtitle}>your daily track</ThemedText>
+            <ThemedText style={styles.subtitle}>for all your friends to hear</ThemedText>
 
             {needsVerification && (
-                <Text style={styles.info}>
+                <ThemedText style={styles.info}>
                     Vi har skickat ett bekräftelsemejl till adressen som hör till ditt
                     Spotify-konto. Klicka på länken i mejlet och logga sedan in igen.
-                </Text>
+                </ThemedText>
             )}
 
-            <Pressable
-                style={[styles.button, loading && styles.buttonDisabled]}
-                onPress={handleSignIn}
-                disabled={loading}
-            >
-                {loading ? (
-                    <ActivityIndicator color="#fff" />
-                ) : (
-                    <Text style={styles.buttonText}>Logga in med Spotify</Text>
-                )}
-            </Pressable>
+            {hasValidSession === true ? (
+                <ThemedText style={styles.alreadyLoggedIn}>Already logged in</ThemedText>
+            ) : hasValidSession === false ? (
+                <Pressable
+                    style={[styles.button, loading && styles.buttonDisabled]}
+                    onPress={handleSignIn}
+                    disabled={loading}
+                >
+                    {loading ? (
+                        <ActivityIndicator />
+                    ) : (
+                        <ThemedText style={styles.buttonText}>Logga in med Spotify</ThemedText>
+                    )}
+                </Pressable>
+            ) : (
+                <ActivityIndicator />
+            )}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 16 },
-    title: { fontSize: 28, fontWeight: '700' },
+    title: {
+        alignSelf: 'stretch',
+        paddingHorizontal: 16,
+        fontSize: 48,
+        lineHeight: 56,
+        fontWeight: '700',
+    },
+    subtitle: {
+        alignSelf: 'stretch',
+        paddingHorizontal: 16,
+        fontSize: 24,
+        lineHeight: 32,
+        textAlign: 'left',
+    },
     info: { textAlign: 'center', fontSize: 15, lineHeight: 21 },
+    alreadyLoggedIn: { fontSize: 16, fontWeight: '600' },
     button: { backgroundColor: '#1DB954', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 999, minWidth: 220, alignItems: 'center' },
     buttonDisabled: { opacity: 0.6 },
-    buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    buttonText: { fontSize: 16, fontWeight: '600' },
 });
