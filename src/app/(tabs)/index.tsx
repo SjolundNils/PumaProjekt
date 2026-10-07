@@ -25,7 +25,7 @@ import { fetchFeed, type FeedEvent } from '@/lib/feed';
 
 export default function FeedScreen() {
   const [events, setEvents] = useState<FeedEvent[]>([]);
-
+  const [testRating, setTestRating] = useState(0);
   // Sant vid första laddningen, då visas en laddningsindikator mitt på skärmen.
   const [loading, setLoading] = useState(true);
 
@@ -98,6 +98,9 @@ export default function FeedScreen() {
                 </Link>
                 <Link href="/groups-test">
                   <ThemedText type="link">Groupstest</ThemedText>
+                </Link>
+                <Link href="/rate/85">
+                  <ThemedText type="link">Rate test</ThemedText>
                 </Link>
               </View>
 
