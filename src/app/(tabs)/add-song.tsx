@@ -1,3 +1,6 @@
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { useTheme } from '@/hooks/use-theme';
 import { getSpotifyTestToken } from '@/lib/spotifyTestToken';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +16,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -40,6 +42,7 @@ export default function AddSongScreen() {
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
 
   async function loadRecentSongs() {
     setLoadingRecent(true);
@@ -159,26 +162,33 @@ export default function AddSongScreen() {
 
     return (
       <Pressable
-        style={[compact ? styles.recentItem : styles.row, selected && styles.selected]}
+        style={[
+          compact ? styles.recentItem : styles.row,
+          selected && [styles.selected, { backgroundColor: theme.backgroundSelected, borderColor: theme.text }],
+        ]}
         onPress={() => setSelectedTrack(track)}
         accessibilityRole="button"
         accessibilityLabel={`Välj ${track.name}`}
       >
         {image && <Image source={{ uri: image.url }} style={compact ? styles.recentCover : styles.cover} />}
         <View style={compact ? styles.recentText : styles.rowText}>
-          <Text style={styles.trackName} numberOfLines={1}>{track.name}</Text>
-          <Text style={styles.artist} numberOfLines={1}>
+          <ThemedText style={styles.trackName} numberOfLines={1}>{track.name}</ThemedText>
+          <ThemedText style={styles.artist} numberOfLines={1}>
             {track.artists.map((artist) => artist.name).join(', ')}
-          </Text>
+          </ThemedText>
         </View>
+        {selected && <Ionicons name="checkmark-circle" size={22} />}
       </Pressable>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <Text style={styles.title}>Add Track</Text>
-      <Text style={styles.subtitle}>Välj en låt från dina senaste tracks eller sök efter en ny.</Text>
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ThemedText type="title" style={styles.title}>Add Track</ThemedText>
+      <ThemedText type="small" style={styles.subtitle}>
+        This will be your track for all groups today, so choose wisely. Or don't.
+      </ThemedText>
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -191,7 +201,7 @@ export default function AddSongScreen() {
           contentContainerStyle={{ padding: 16, paddingBottom: 96 + insets.bottom }}
           ListHeaderComponent={
             <>
-              <Text style={styles.sectionTitle}>Recent tracks</Text>
+              <ThemedText type="subtitle" style={styles.sectionTitle}>Recent tracks</ThemedText>
               {loadingRecent ? (
                 <ActivityIndicator style={styles.recentLoading} />
               ) : (
@@ -202,30 +212,31 @@ export default function AddSongScreen() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.recentList}
                   renderItem={({ item }) => renderTrack(item, true)}
-                  ListEmptyComponent={<Text style={styles.muted}>Inga recent tracks hittades.</Text>}
+                  ListEmptyComponent={
+                    <ThemedText style={styles.muted}>Inga recent tracks hittades.</ThemedText>
+                  }
                 />
               )}
-              <Text style={styles.sectionTitle}>Search results</Text>
-              {errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
+              <ThemedText type="subtitle" style={styles.sectionTitle}>Search results</ThemedText>
+              {errorMessage && <ThemedText style={styles.error}>{errorMessage}</ThemedText>}
             </>
           }
           renderItem={({ item }) => renderTrack(item)}
           ListEmptyComponent={
-            !loading ? <Text style={styles.muted}>Sök efter en låt för att se resultat.</Text> : null
+            !loading ? <ThemedText style={styles.muted}>Sök efter en låt för att se resultat.</ThemedText> : null
           }
         />
 
         <View style={[styles.searchOverlay, { paddingBottom: insets.bottom + 8 }]} pointerEvents="box-none">
           <GlassContainer spacing={8} style={styles.searchRow}>
             <GlassView style={[styles.searchField, !glassSupported && styles.fallback]} glassEffectStyle="regular">
-              <Ionicons name="search" size={18} color="#8e8e93" />
+              <Ionicons name="search" size={18} />
               <TextInput
                 style={styles.input}
                 value={query}
                 onChangeText={setQuery}
                 onSubmitEditing={handleSearch}
                 placeholder="Sök efter en låt"
-                placeholderTextColor="#8e8e93"
                 returnKeyType="search"
                 autoCorrect={false}
                 clearButtonMode="while-editing"
@@ -233,50 +244,62 @@ export default function AddSongScreen() {
             </GlassView>
             <GlassView style={[styles.searchButton, !glassSupported && styles.fallback]} glassEffectStyle="regular" isInteractive>
               <Pressable onPress={handleSearch} disabled={loading} style={styles.searchButtonInner}>
-                {loading ? <ActivityIndicator /> : <Ionicons name="arrow-forward" size={20} color="#000" />}
+                {loading ? <ActivityIndicator /> : <Ionicons name="arrow-forward" size={20} />}
               </Pressable>
             </GlassView>
           </GlassContainer>
           <Pressable
-            style={[styles.confirmButton, !selectedTrack && styles.buttonDisabled]}
+            style={[
+              styles.confirmButton,
+              { backgroundColor: theme.backgroundElement, borderColor: theme.text },
+              !selectedTrack && styles.buttonDisabled,
+            ]}
             onPress={confirmSelection}
             disabled={!selectedTrack || saving}
           >
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.confirmText}>Bekräfta vald låt</Text>}
+            {saving ? <ActivityIndicator /> : <ThemedText style={styles.confirmText}>Bekräfta vald låt</ThemedText>}
           </Pressable>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1 },
+  safeArea: { flex: 1 },
   flex: { flex: 1 },
-  title: { fontSize: 28, fontWeight: '700', paddingHorizontal: 16 },
-  subtitle: { fontSize: 15, color: '#666', paddingHorizontal: 16, marginTop: 4 },
-  sectionTitle: { fontSize: 19, fontWeight: '700', marginTop: 20, marginBottom: 10 },
+  title: { paddingHorizontal: 16 },
+  subtitle: { paddingHorizontal: 16, marginTop: 4 },
+  sectionTitle: { marginTop: 20, marginBottom: 10 },
   recentList: { gap: 10 },
   recentItem: { width: 120, padding: 8, borderRadius: 10 },
   recentCover: { width: 104, height: 104, borderRadius: 8, marginBottom: 6 },
   recentText: { width: 104 },
   recentLoading: { marginVertical: 24 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderRadius: 8 },
-  selected: { backgroundColor: '#e5f7eb' },
+  selected: { borderWidth: 2, borderRadius: 8 },
   cover: { width: 52, height: 52, borderRadius: 4 },
   rowText: { flex: 1 },
   trackName: { fontSize: 15, fontWeight: '600' },
-  artist: { fontSize: 13, color: '#666', marginTop: 2 },
-  muted: { color: '#777', paddingVertical: 12 },
-  error: { color: '#c00', marginBottom: 8 },
+  artist: { fontSize: 13, marginTop: 2 },
+  muted: { paddingVertical: 12 },
+  error: { marginBottom: 8 },
   searchOverlay: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   searchField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: SEARCH_BAR_HEIGHT, borderRadius: 24, paddingHorizontal: 16 },
   input: { flex: 1, fontSize: 17, paddingVertical: 0 },
   searchButton: { width: SEARCH_BAR_HEIGHT, height: SEARCH_BAR_HEIGHT, borderRadius: 24 },
   searchButtonInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  fallback: { backgroundColor: 'rgba(240, 240, 240, 0.95)' },
-  confirmButton: { backgroundColor: '#1DB954', borderRadius: 10, paddingVertical: 13, alignItems: 'center', marginTop: 8 },
+  fallback: { borderWidth: StyleSheet.hairlineWidth },
+  confirmButton: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 13,
+    alignItems: 'center',
+    marginTop: 8,
+  },
   buttonDisabled: { opacity: 0.45 },
-  confirmText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  confirmText: { fontWeight: '700', fontSize: 16 },
 });
