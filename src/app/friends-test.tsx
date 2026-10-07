@@ -7,28 +7,28 @@
  */
 import { signOut } from '@/lib/auth';
 import {
-	acceptRequest,
-	Friendship,
-	listFriendships,
-	ProfileHit,
-	removeFriendship,
-	searchUsers,
-	sendFriendRequest,
+  acceptRequest,
+  Friendship,
+  listFriendships,
+  ProfileHit,
+  removeFriendship,
+  searchUsers,
+  sendFriendRequest,
 } from '@/lib/friends';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-	ActivityIndicator,
-	Alert,
-	Image,
-	Pressable,
-	RefreshControl,
-	ScrollView,
-	StyleSheet,
-	Text,
-	TextInput,
-	View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 
 const SEND_MESSAGES = {
@@ -169,6 +169,9 @@ export default function FriendsTestScreen() {
           <Text style={styles.buttonText}>Sök</Text>
         </Pressable>
       </View>
+      <Pressable style={styles.addFriendsButton} onPress={() => router.push('/add-friends')}>
+        <Text style={styles.buttonText}>Add friends</Text>
+      </Pressable>
 
       {searched && hits.length === 0 && <Text style={styles.empty}>Inga träffar.</Text>}
       {hits.map((hit) => (
@@ -266,6 +269,7 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: 'row', gap: 8 },
   input: { flex: 1, borderWidth: 1, borderColor: '#ccc', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 },
   button: { backgroundColor: '#1DB954', borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' },
+  addFriendsButton: { backgroundColor: '#1DB954', borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
   buttonText: { color: '#fff', fontWeight: '600' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
   avatar: { width: 40, height: 40, borderRadius: 20 },
