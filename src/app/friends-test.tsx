@@ -7,28 +7,28 @@
  */
 import { signOut } from '@/lib/auth';
 import {
-  acceptRequest,
-  Friendship,
-  listFriendships,
-  ProfileHit,
-  removeFriendship,
-  searchUsers,
-  sendFriendRequest,
+	acceptRequest,
+	Friendship,
+	listFriendships,
+	ProfileHit,
+	removeFriendship,
+	searchUsers,
+	sendFriendRequest,
 } from '@/lib/friends';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+	ActivityIndicator,
+	Alert,
+	Image,
+	Pressable,
+	RefreshControl,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TextInput,
+	View,
 } from 'react-native';
 
 const SEND_MESSAGES = {
@@ -152,6 +152,10 @@ export default function FriendsTestScreen() {
           <Text style={styles.link}>Logga ut</Text>
         </Pressable>
       </View>
+
+	   <Pressable style={styles.button} onPress={() => router.push('/friends')}>
+        <Text style={styles.buttonText}>Öppna vänlistan (friends/index)</Text>
+      </Pressable>
 
       {/* Sök */}
       <Text style={styles.section}>Sök användare</Text>
