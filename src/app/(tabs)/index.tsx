@@ -13,7 +13,7 @@
 
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FeedItem } from '@/components/feed/feed-item';
@@ -21,6 +21,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset } from '@/constants/theme';
 import { getErrorMessage } from '@/lib/errors';
+
 import { fetchFeed, type FeedEvent } from '@/lib/feed';
 
 export default function FeedScreen() {
@@ -86,7 +87,11 @@ export default function FeedScreen() {
               <ThemedText type="title">Flöde</ThemedText>
 
               {/* TEST: tillfälliga länkar till testskärmarna. Tas bort senare. */}
-              <View style={styles.testLinks}>
+              <ScrollView 
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.testLinks}
+                >
                 <Link href="/login">
                   <ThemedText type="link">Inloggning</ThemedText>
                 </Link>
@@ -105,7 +110,7 @@ export default function FeedScreen() {
                 <Link href="/rate/85">
                   <ThemedText type="link">Rate test</ThemedText>
                 </Link>
-              </View>
+              </ScrollView>
 
               {errorMessage && <ThemedText style={styles.error}>{errorMessage}</ThemedText>}
             </View>
