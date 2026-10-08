@@ -427,6 +427,7 @@ export default function ProfileTestScreen() {
           onChangeText={setDisplayName}
           placeholder="Ditt namn"
         />
+        <Text style={styles.label}>{spotifyProfile?.user_name ? '@' + spotifyProfile.user_name : 'Inget namn angivet'}</Text>
 
         <Text style={styles.label}>Biografi</Text>
         <TextInput
