@@ -12,11 +12,11 @@
  * låttiteln (se components/rating/rate-button.tsx).
  */
 
-import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
-
 import { RateButton } from '@/components/rating/rate-button';
 import { ThemedText } from '@/components/themed-text';
 import type { FeedEvent } from '@/lib/feed';
+import { router } from 'expo-router';
+import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
 
 type Props = {
   event: FeedEvent;
@@ -70,18 +70,36 @@ export function FeedItem({ event, currentUserId, myRating }: Props) {
   const showRating =
     event.type === 'song_chosen' && song !== null && event.actor?.id !== currentUserId;
 
+  /** Öppnar aktörens profil, eller profilfliken om det är användaren själv. */
+  function openProfile() {
+    if (!event.actor) return;
+    if (event.actor.id === currentUserId) {
+      router.navigate('/profile');
+      return;
+    }
+    router.push({ pathname: '/user/[userId]', params: { userId: event.actor.id } });
+  }
+
   return (
     <Pressable
       style={styles.row}
       onPress={() => spotifyUrl && Linking.openURL(spotifyUrl)}
       disabled={!spotifyUrl}
     >
-      {event.actor?.avatar_url ? (
-        <Image source={{ uri: event.actor.avatar_url }} style={styles.avatar} />
-      ) : (
-        <View style={[styles.avatar, styles.avatarPlaceholder]} />
-      )}
+      {/* Egen tryckyta: öppnar aktörens profil istället för Spotify. */}
+      <Pressable
+        onPress={openProfile}
+        disabled={!event.actor}
+        hitSlop={6}
+        accessibilityLabel={`Open ${event.actor?.display_name ?? 'profile'}`}
+      >
+        {event.actor?.avatar_url ? (
+          <Image source={{ uri: event.actor.avatar_url }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, styles.avatarPlaceholder]} />
+        )}
 
+      </Pressable>
       <View style={styles.body}>
         <ThemedText>{text}</ThemedText>
         {subtitle && (
