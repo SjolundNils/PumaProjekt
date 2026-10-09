@@ -12,21 +12,22 @@
  */
 
 import { signOut } from '@/lib/auth';
-import { getSpotifyTestToken } from '@/lib/spotifyTestToken';
+import { getRecentlyPlayed, getSpotifyProfile, RecentTrack, searchAlbums } from '@/lib/spotifyData';
+import { SpotifyNotConnectedError } from '@/lib/spotifySearch';
 import { supabase } from '@/lib/supabase';
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+	ActivityIndicator,
+	Alert,
+	Image,
+	Pressable,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -59,13 +60,6 @@ type SpotifyAlbumSearchResult = {
   image_url: string | null;
 };
 
-type SpotifyTrack = {
-  id: string;
-  name: string;
-  artists: { name: string }[];
-  album: { images: { url: string }[];};
-};
-
 type DailySong = {
   track_name: string;
   artist_name: string;
@@ -73,14 +67,25 @@ type DailySong = {
   song_date: string;
 }
 
+/** Skickar användaren till inloggningen om Spotify-kopplingen saknas, annars visas felet. */
+function handleSpotifyError(error: unknown, title: string) {
+  if (error instanceof SpotifyNotConnectedError) {
+    router.replace('/login');
+    return;
+  }
+  Alert.alert(title, error instanceof Error ? error.message : 'Okänt fel');
+}
+
 export default function ProfileTestScreen() {
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchCounter = useRef(0);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [spotifyProfile, setSpotifyProfile] = useState<SpotifyProfile | null>(null);
   const [albums, setAlbums] = useState<FavoriteAlbum[]>([]);
   const [spotifyAlbumSearchResult, setSpotifyAlbumSearchResult] = useState<SpotifyAlbumSearchResult[]>([]);
   const [albumQuery, setAlbumQuery] = useState('');
   const [editAlbumIndex, setEditAlbumIndex] = useState<number | null>(null);
-  const [recentSongs, setRecentSongs] = useState<SpotifyTrack[]>([]);
+  const [recentSongs, setRecentSongs] = useState<RecentTrack[]>([]);
   const [dailySong, setDailySong] = useState<DailySong | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [biography, setBiography] = useState('');
@@ -130,51 +135,12 @@ export default function ProfileTestScreen() {
     }
   }
 
-  async function loadSpotifyProfile() {
-    setLoading(true);
-
+    async function loadSpotifyProfile() {
     try {
-      const token = await getSpotifyTestToken();
-      if (!token) {
-        const message = 'Ingen Spotify-nyckel hittades. Logga in igen.';
-        Alert.alert('Kunde inte hämta profilen', message);
-        return;
-      }
-
-      // URL för inloggade användarens profil
-      const url = 'https://api.spotify.com/v1/me';
-
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.status === 401) {
-        const message = 'Spotify-nyckeln har gått ut. Logga in igen.';
-        Alert.alert('Kunde inte hämta profilen', message);
-        return;
-      }
-
-      if (!response.ok) {
-        const message = `Spotify svarade med fel ${response.status}.`;
-        Alert.alert('Kunde inte hämta profilen', message);
-        return;
-      }
-
-      const data = await response.json();
-
-      // Tar ut profilbildens URL eller null om den inte finns
-      const profileImageUrl = data.images && data.images.length > 0 ? data.images[0].url : null;
-      const displayName = data.display_name && data.display_name.length > 0 ? data.display_name : null;
-
-      setSpotifyProfile({ user_name: displayName, image_url: profileImageUrl});
-
-      console.log('Profilbildens URL:', profileImageUrl);
-      console.log('Visningsnamn:', displayName);
+      const data = await getSpotifyProfile();
+      setSpotifyProfile({ user_name: data.display_name, image_url: data.image_url });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Okänt fel';
-      Alert.alert('Kunde inte hämta profilen', message);
-    } finally {
-      setLoading(false);
+      handleSpotifyError(error, 'Kunde inte hämta Spotify-profilen');
     }
   }
 
@@ -198,7 +164,11 @@ export default function ProfileTestScreen() {
         return;
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const { data: today, error: dateError } = await supabase.rpc('app_today');
+      if (dateError || !today) {
+        console.log('Kunde inte hämta dagens datum', dateError);
+        return;
+      }
 
       const {data, error} = await supabase
         .from('daily_songs')
@@ -218,53 +188,26 @@ export default function ProfileTestScreen() {
     }
   }
 
-  const searchAlbum = async (text: string) => {
+    const searchAlbum = (text: string) => {
     setAlbumQuery(text);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
 
     const trimmed = text.trim();
-    if (!trimmed) {
-      setSpotifyAlbumSearchResult([]); // Rensa resultat om rutan tömms
+    if (trimmed.length < 2) {
+      searchCounter.current++; // ogiltigförklarar sökningar som är på väg
+      setSpotifyAlbumSearchResult([]);
       return;
     }
 
-    const token = await getSpotifyTestToken();
-    if (!token) {
-      const message = 'Ingen Spotify-nyckel hittades. Logga in igen.';
-      Alert.alert('Kunde inte hämta profilen', message);
-      return;
-    }
-  
-    // URL för söka med type=album
-    const url =
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(trimmed)}` +
-      `&type=album&limit=10`;
-  
-    const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  
-    if (response.status === 401) {
-      const message = 'Spotify-nyckeln har gått ut. Logga in igen.';
-      Alert.alert('Kunde inte hämta profilen', message);
-      return;
-    }
-    if (!response.ok) {
-      const message = `Spotify svarade med fel ${response.status}.`;
-      Alert.alert('Kunde inte hämta profilen', message);
-      return;
-    }
-  
-    const data = await response.json();
-
-    const albumList: SpotifyAlbumSearchResult[] = data.albums.items.map((album: any) => ({
-      id: album.id,
-      album_name: album.name,
-      artist_name: album.artists.map((artist: any) => artist.name).join(', '),
-      image_url: album.images && album.images.length > 0 ? album.images[0].url : null,
-    }));
-
-    console.log('Search Results:', albumList);
-    setSpotifyAlbumSearchResult(albumList);
+    searchTimer.current = setTimeout(async () => {
+      const id = ++searchCounter.current;
+      try {
+        const result = await searchAlbums(trimmed);
+        if (id === searchCounter.current) setSpotifyAlbumSearchResult(result);
+      } catch (error) {
+        handleSpotifyError(error, 'Kunde inte söka album');
+      }
+    }, 400);
   };
 
   const selectFavoriteAlbum = (selected: SpotifyAlbumSearchResult) => {
@@ -496,19 +439,14 @@ export default function ProfileTestScreen() {
         <Text style={styles.sectionTitle}>Recent songs</Text>
 
         {recentSongs.map((song) => (
-          <View key={song.id} style={styles.songRow}>
-            {song.album.images[0] && (
-              <Image
-                source={{ uri: song.album.images[0].url }}
-                style={styles.songCover}
-              />
+          <View key={`${song.id}-${song.played_at}`} style={styles.songRow}>
+            {song.image_url && (
+              <Image source={{ uri: song.image_url }} style={styles.songCover} />
             )}
 
             <View>
               <Text style={styles.songName}>{song.name}</Text>
-              <Text style={styles.songArtist}>
-                {song.artists.map((artist) => artist.name).join(', ')}
-              </Text>
+              <Text style={styles.songArtist}>{song.artist_name}</Text>
             </View>
           </View>
         ))}
@@ -542,48 +480,15 @@ export default function ProfileTestScreen() {
     </SafeAreaView>
   );
 
-  async function loadRecentSongs() {
+    async function loadRecentSongs() {
     try {
-      // Hämtar Spotify-token som sparades vid inloggningen
-      const token = await getSpotifyTestToken();
-
-      if (!token) {
-        console.log('Ingen Spotify-token hittades.');
-        return;
-      }
-
-      // Frågar Spotify efter de 5 senast spelade låtarna
-      const response = await fetch(
-        'https://api.spotify.com/v1/me/player/recently-played?limit=5',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.status === 401) {
-        const message = 'Spotify-nyckeln har gått ut. Logga in igen.';
-        Alert.alert('Kunde inte hämta profilen', message);
-        return;
-      }
-
-      if (!response.ok) {
-        console.log('Spotify-fel:', response.status);
-        return;
-      }
-
-      const data = await response.json();
-
-      console.log('Recently played:', data);
-
-      // Spotify returnerar varje låt inuti ett "track"-objekt.
-      const tracks = data.items.map(
-        (item: { track: SpotifyTrack }) => item.track
-      );
-
-      setRecentSongs(tracks);
+      setRecentSongs(await getRecentlyPlayed());
     } catch (error) {
+      // Senaste låtar är inte kritiskt: bara en logg, utom när kopplingen saknas
+      if (error instanceof SpotifyNotConnectedError) {
+        router.replace('/login');
+        return;
+      }
       console.log('Kunde inte hämta senaste låtar:', error);
     }
   }
