@@ -20,7 +20,7 @@
  */
 import { ThemedText } from '@/components/themed-text';
 import { signInWithSpotify } from '@/lib/auth';
-import { getSessionStatus, SessionStatus } from '@/lib/session';
+import { getSessionStatus, refreshSessionStatus, SessionStatus } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -74,6 +74,9 @@ export default function LoginScreen() {
 
             switch (result.status) {
                 case 'signed_in':
+                    // Meddelar rotens vakt att Spotify nu är kopplat. Utan det
+                    // skulle vakten skicka tillbaka användaren hit.
+                    await refreshSessionStatus();
                     router.replace('/');
                     break;
                 case 'verify_email':
