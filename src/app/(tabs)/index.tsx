@@ -118,7 +118,7 @@ export default function FeedScreen() {
                 <Link href="/search-test">
                   <ThemedText type="link">Söktest</ThemedText>
                 </Link>
-                <Link href="/profile-test">
+                <Link href="/profile">
                   <ThemedText type="link">Profiltest</ThemedText>
                 </Link>
                 <Link href="/groups-test">
