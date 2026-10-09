@@ -314,9 +314,6 @@ export default function ProfileScreen() {
   if (editAlbumIndex !== null) {
     return (
       <View style={styles.container}>
-        <TouchableOpacity onPress={() => setEditAlbumIndex(null)}>
-          <Text style={styles.label}>← Tillbaka</Text>
-        </TouchableOpacity>
 
         <Text style={styles.title}>Välj album för plats {editAlbumIndex}</Text>
 
@@ -327,6 +324,9 @@ export default function ProfileScreen() {
           value={albumQuery}
           onChangeText={searchAlbum}
         />
+        <TouchableOpacity onPress={() => setEditAlbumIndex(null)}>
+          <Text style={styles.label}>← Tillbaka</Text>
+        </TouchableOpacity>
 
         {spotifyAlbumSearchResult.map((item) => (
           <TouchableOpacity
