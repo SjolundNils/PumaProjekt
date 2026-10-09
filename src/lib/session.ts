@@ -22,3 +22,31 @@ export async function getSessionStatus(): Promise<SessionStatus> {
 
   return profile?.spotify_connected ? 'ready' : 'needs_spotify';
 }
+
+type Listener = (status: SessionStatus) => void;
+const listeners = new Set<Listener>();
+
+/** Lyssna på ändringar i inloggningsläget. Returnerar en funktion som avregistrerar. */
+export function onSessionStatusChange(listener: Listener): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/**
+ * Kontrollerar läget på nytt och meddelar alla lyssnare (t.ex. rotens vakt).
+ * Anropas efter en lyckad inloggning, innan användaren skickas vidare.
+ * Går det inte att kontrollera (t.ex. offline) räknas användaren som inloggad,
+ * eftersom servern ändå avvisar anrop utan giltig koppling.
+ */
+export async function refreshSessionStatus(): Promise<SessionStatus> {
+  let status: SessionStatus;
+  try {
+    status = await getSessionStatus();
+  } catch {
+    status = 'ready';
+  }
+  listeners.forEach((listener) => listener(status));
+  return status;
+}
