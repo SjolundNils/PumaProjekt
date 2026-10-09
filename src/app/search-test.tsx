@@ -15,22 +15,22 @@
  * scrollar. På Android och iOS äldre än 26 används en vanlig grå bakgrund.
  */
 
-import { getSpotifyTestToken } from '@/lib/spotifyTestToken';
+import { TrackHit } from '@/lib/spotifySearch';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassContainer, GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+	ActivityIndicator,
+	FlatList,
+	Image,
+	KeyboardAvoidingView,
+	Platform,
+	Pressable,
+	StyleSheet,
+	Text,
+	TextInput,
+	View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -44,21 +44,9 @@ const glassSupported = isLiquidGlassAvailable();
 /** Höjd på sökfältet och knappen. Används även för listans nedre marginal. */
 const SEARCH_BAR_HEIGHT = 48;
 
-/**
- * De delar av Spotifys låtobjekt som skärmen använder.
- * Spotify returnerar betydligt fler fält, men endast dessa behövs här.
- */
-type SpotifyTrack = {
-  id: string;
-  name: string;
-  uri: string;
-  artists: { name: string }[];
-  album: { name: string; images: { url: string; width: number }[] };
-};
-
 export default function SearchTestScreen() {
   const [query, setQuery] = useState('');
-  const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
+  const [tracks, setTracks] = useState<TrackHit[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
