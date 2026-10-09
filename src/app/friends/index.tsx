@@ -7,29 +7,31 @@
  * Datan kommer från lib/friends.ts. Sökningen här filtrerar bara listan jag
  * redan har hämtat. Sökning bland alla användare görs på add-sidan.
  */
+import { useTheme } from '@/hooks/use-theme';
+import { ActionButton } from '@/components/ui/action-button';
+import { BackButton } from '@/components/ui/back-button';
 import { Friendship, getFriends, removeFriendship } from '@/lib/friends';
+import { createFriendsStyles } from '@/styles/friends';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
-	ActivityIndicator,
-	Alert,
-	FlatList,
-	Image,
-	Pressable,
-	RefreshControl,
-	StyleSheet,
-	Text,
-	TextInput,
-	View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Pressable,
+  RefreshControl,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// TODO: flytta till constants/ när ni har en gemensam färgfil
-const ACCENT = '#5B4DF5';
-
 export default function FriendsScreen() {
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
+  const styles = createFriendsStyles(theme);
 
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [query, setQuery] = useState('');
@@ -99,36 +101,37 @@ export default function FriendsScreen() {
       {/* Egen header i designen, så den inbyggda döljs */}
       <Stack.Screen options={{ headerShown: false }} />
 
-      <Pressable style={styles.backButton} onPress={goBack} hitSlop={8}>
-        <Ionicons name="chevron-back" size={22} color="#000" />
-      </Pressable>
+      <BackButton onPress={goBack} />
 
       <View style={styles.titleRow}>
         <View>
           <Text style={styles.title}>Friends</Text>
           <Text style={styles.subtitle}>Your music lovers</Text>
         </View>
-        <Pressable style={styles.addButton} onPress={() => router.push('/friends/add')}>
-          <Ionicons name="add" size={16} color="#fff" />
-          <Text style={styles.addButtonText}>Add Friends</Text>
-        </Pressable>
+        <ActionButton
+          icon="add"
+          label="Add Friends"
+          onPress={() => router.push('/friends/add')}
+          size="medium"
+          style={{ marginTop: 4 }}
+        />
       </View>
 
       <View style={styles.searchBox}>
-        <Ionicons name="search" size={20} color="#000" />
+        <Ionicons name="search" size={20} color={theme.text} />
         <TextInput
           style={styles.searchInput}
           value={query}
           onChangeText={setQuery}
           placeholder="Search"
-          placeholderTextColor="#999"
+          placeholderTextColor={theme.textSecondary}
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="search"
         />
         {query.length > 0 && (
           <Pressable onPress={() => setQuery('')} hitSlop={8}>
-            <Ionicons name="close-circle" size={20} color="#999" />
+            <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
           </Pressable>
         )}
       </View>
@@ -175,7 +178,7 @@ export default function FriendsScreen() {
                 {item.display_name ?? 'Unknown'}
               </Text>
               <Pressable style={styles.menuButton} onPress={() => openMenu(item)} hitSlop={8}>
-                <Ionicons name="ellipsis-horizontal" size={16} color={ACCENT} />
+                <Ionicons name="ellipsis-horizontal" size={16} color={theme.text} />
               </Pressable>
             </View>
           )}
@@ -196,68 +199,3 @@ export default function FriendsScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 16 },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 16 },
-  title: { fontSize: 32, fontWeight: '800', color: '#000' },
-  subtitle: { fontSize: 16, color: '#999', marginTop: 2 },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: ACCENT,
-    borderRadius: 999,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginTop: 4,
-  },
-  addButtonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#fff',
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    height: 48,
-    marginTop: 24,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  searchInput: { flex: 1, fontSize: 16, color: '#000' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
-  avatar: { width: 44, height: 44, borderRadius: 22 },
-  avatarEmpty: { backgroundColor: '#ddd' },
-  name: { flex: 1, fontSize: 16, color: '#000' },
-  menuButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#eee',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  center: { alignItems: 'center', marginTop: 48, paddingHorizontal: 24, gap: 6 },
-  emptyTitle: { fontSize: 18, fontWeight: '700' },
-  emptyText: { color: '#888', textAlign: 'center' },
-  retryButton: { marginTop: 12, backgroundColor: ACCENT, borderRadius: 999, paddingVertical: 10, paddingHorizontal: 20 },
-  retryText: { color: '#fff', fontWeight: '600' },
-});

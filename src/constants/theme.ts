@@ -14,6 +14,10 @@ export const Colors = {
     backgroundElement: '#F0F0F3',
     backgroundSelected: '#E0E1E6',
     textSecondary: '#60646C',
+
+    accentIndigo: '#6155F5',
+    accentOrange: '#F97316',
+    accentText: '#FFFFFF',
   },
   dark: {
     text: '#ffffff',
@@ -21,9 +25,14 @@ export const Colors = {
     backgroundElement: '#212225',
     backgroundSelected: '#2E3135',
     textSecondary: '#B0B4BA',
+
+    accentIndigo: '#6155F5',
+    accentOrange: '#F97316',
+    accentText: '#FFFFFF',
   },
 } as const;
 
+export type AppTheme = (typeof Colors)['light'] | (typeof Colors)['dark'];
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
 export const Fonts = Platform.select({
