@@ -13,11 +13,12 @@ export async function getSessionStatus(): Promise<SessionStatus> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return 'signed_out';
 
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from('profiles')
     .select('spotify_connected')
     .eq('id', session.user.id)
     .maybeSingle();
+  if (error) throw error;
 
   return profile?.spotify_connected ? 'ready' : 'needs_spotify';
 }
