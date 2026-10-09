@@ -1,8 +1,15 @@
 /**
  * login.tsx
  *
- * Inloggningsskärmen. Låter användaren logga in med Spotify och hanterar
- * de tre möjliga utfallen från signInWithSpotify:
+ * Inloggningsskärmen. Låter användaren logga in med Spotify.
+ *
+ * Vid start kontrolleras inloggningsläget (se lib/session.ts):
+ *   - ready:         Supabase-session och Spotify-koppling finns.
+ *   - needs_spotify: användaren är inloggad i appen men Spotify-kopplingen
+ *                    saknas eller har återkallats. En ny inloggning krävs.
+ *   - signed_out:    ingen session.
+ *
+ * Utfallen från signInWithSpotify:
  *   - signed_in:    användaren skickas vidare in i appen.
  *   - verify_email: ett meddelande visas om att e-postadressen måste
  *                   bekräftas innan inloggning är möjlig.
@@ -13,7 +20,7 @@
  */
 import { ThemedText } from '@/components/themed-text';
 import { signInWithSpotify } from '@/lib/auth';
-import { saveSpotifyTestToken } from '@/lib/spotifyTestToken';
+import { getSessionStatus, SessionStatus } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -23,7 +30,9 @@ export default function LoginScreen() {
     // Sant medan inloggningen pågår. Används för att visa en laddningsindikator
     // och förhindra att användaren startar flera inloggningar samtidigt.
     const [loading, setLoading] = useState(false);
-    const [hasValidSession, setHasValidSession] = useState<boolean | null>(null);
+
+    // Inloggningsläget. 'loading' gäller tills första kontrollen är klar.
+    const [status, setStatus] = useState<SessionStatus | 'loading'>('loading');
 
     // Sant när Supabase har skickat ett bekräftelsemejl som användaren
     // måste klicka på innan inloggning är möjlig.
@@ -32,20 +41,21 @@ export default function LoginScreen() {
     useEffect(() => {
         let mounted = true;
 
-        supabase.auth.getSession().then(({ data, error }) => {
-            if (error) {
-                if (mounted) setHasValidSession(false);
-                return;
-            }
-            if (mounted) setHasValidSession(Boolean(data.session));
-        });
+        getSessionStatus()
+            .then((result) => {
+                if (mounted) setStatus(result);
+            })
+            .catch(() => {
+                // Går det inte att avgöra visas inloggningsknappen
+                if (mounted) setStatus('signed_out');
+            });
 
-        const { data } = supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                setHasValidSession(Boolean(session));
-            } else if (event === 'SIGNED_OUT') {
-                setHasValidSession(false);
-            }
+        // Bara utloggning bevakas här. SIGNED_IN ignoreras med flit: den
+        // utlöses mitt i inloggningen, innan Spotify-nyckeln är sparad, och
+        // då skulle skärmen felaktigt visa "Already logged in".
+        // Anropa inga supabase-funktioner inuti den här callbacken.
+        const { data } = supabase.auth.onAuthStateChange((event) => {
+            if (event === 'SIGNED_OUT') setStatus('signed_out');
         });
 
         return () => {
@@ -64,10 +74,6 @@ export default function LoginScreen() {
 
             switch (result.status) {
                 case 'signed_in':
-                    // TEST: sparar Spotify-nyckeln för söktestet. Tas bort senare.
-                    if (result.providerToken) {
-                        await saveSpotifyTestToken(result.providerToken);
-                    }
                     router.replace('/');
                     break;
                 case 'verify_email':
@@ -79,7 +85,8 @@ export default function LoginScreen() {
             }
         } catch (error) {
             // Oväntade fel, till exempel att kontot inte finns under
-            // User Management i Spotifys utvecklarpanel.
+            // User Management i Spotifys utvecklarpanel, eller att
+            // Spotify-nyckeln inte kunde sparas.
             const message = error instanceof Error ? error.message : 'Okänt fel';
             Alert.alert('Inloggningen misslyckades', message);
         } finally {
@@ -100,9 +107,15 @@ export default function LoginScreen() {
                 </ThemedText>
             )}
 
-            {hasValidSession === true ? (
-                <ThemedText style={styles.alreadyLoggedIn}>Already logged in</ThemedText>
-            ) : hasValidSession === false ? (
+            {status === 'needs_spotify' && !needsVerification && (
+                <ThemedText style={styles.info}>
+                    Din Spotify-koppling har gått ut. Logga in med Spotify igen för att fortsätta.
+                </ThemedText>
+            )}
+
+            {status === 'loading' ? (
+                <ActivityIndicator />
+            ) : (
                 <Pressable
                     style={[styles.button, loading && styles.buttonDisabled]}
                     onPress={handleSignIn}
@@ -114,8 +127,6 @@ export default function LoginScreen() {
                         <ThemedText style={styles.buttonText}>Logga in med Spotify</ThemedText>
                     )}
                 </Pressable>
-            ) : (
-                <ActivityIndicator />
             )}
         </View>
     );
@@ -138,7 +149,6 @@ const styles = StyleSheet.create({
         textAlign: 'left',
     },
     info: { textAlign: 'center', fontSize: 15, lineHeight: 21 },
-    alreadyLoggedIn: { fontSize: 16, fontWeight: '600' },
     button: { backgroundColor: '#1DB954', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 999, minWidth: 220, alignItems: 'center' },
     buttonDisabled: { opacity: 0.6 },
     buttonText: { fontSize: 16, fontWeight: '600' },
