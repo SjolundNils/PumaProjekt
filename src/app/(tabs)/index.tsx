@@ -131,6 +131,9 @@ export default function FeedScreen() {
                   <ThemedText type="link">Rate test</ThemedText>
                 </Link>
               </ScrollView>
+              <Link href="/create-group">
+                <ThemedText type="link">Create group</ThemedText>
+              </Link>
 
               {errorMessage && <ThemedText style={styles.error}>{errorMessage}</ThemedText>}
             </View>

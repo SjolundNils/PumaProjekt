@@ -89,6 +89,14 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: 'transparent' },
           }}
         />
+        <Stack.Screen
+          name="create-group"
+          options={{
+            headerShown: true,
+            title: 'New group',
+            headerBackTitle: 'Back',
+          }}
+        />
       </Stack>
 
       {/* Döljer appen tills läget är kontrollerat, så att inget flimrar förbi. */}

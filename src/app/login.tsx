@@ -22,8 +22,9 @@ import { ThemedText } from '@/components/themed-text';
 import { signInWithSpotify } from '@/lib/auth';
 import { getSessionStatus, refreshSessionStatus, SessionStatus } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
+import { saveSpotifyTestToken } from '@/lib/spotifyTestToken';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
 
 export default function LoginScreen() {
