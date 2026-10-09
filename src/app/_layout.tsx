@@ -13,13 +13,13 @@
  * /login skickas vidare till startsidan.
  */
 import {
-	DarkTheme,
-	DefaultTheme,
-	router,
-	Stack,
-	ThemeProvider,
-	useRootNavigationState,
-	useSegments,
+  DarkTheme,
+  DefaultTheme,
+  router,
+  Stack,
+  ThemeProvider,
+  useRootNavigationState,
+  useSegments,
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
@@ -96,6 +96,15 @@ export default function RootLayout() {
             title: 'New group',
             headerBackTitle: 'Back',
           }}
+        />
+        <Stack.Screen
+          name="user/[userId]"
+          options={{ headerShown: true, title: '', headerBackTitle: 'Back' }}
+        />
+
+        <Stack.Screen
+            name="edit-profile"
+            options={{ headerShown: true, title: 'Edit profile', headerBackTitle: 'Back' }}
         />
       </Stack>
 
