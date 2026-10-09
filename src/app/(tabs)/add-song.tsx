@@ -1,7 +1,23 @@
+/**
+ * add-song.tsx
+ *
+ * Fliken för att välja dagens låt.
+ *
+ * Visar användarens senast spelade låtar och låter hen söka efter fler.
+ * Alla Spotify-anrop går via servern (se spotifyData.ts och
+ * spotifySearch.ts), så appen hanterar aldrig några Spotify-nycklar.
+ *
+ * När en låt har valts sparas den i daily_songs. Databasen sätter dagens
+ * datum i svensk tid, och tillåter bara en låt per person och dag.
+ */
+
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
-import { getSpotifyTestToken } from '@/lib/spotifyTestToken';
+
+import { getErrorMessage } from '@/lib/errors';
+import { getRecentlyPlayed } from '@/lib/spotifyData';
+import { searchTracks, SpotifyNotConnectedError } from '@/lib/spotifySearch';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassContainer, GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
@@ -24,55 +40,65 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 const glassSupported = isLiquidGlassAvailable();
 const SEARCH_BAR_HEIGHT = 48;
 
-type SpotifyTrack = {
+/**
+ * En låt som kan väljas. Både senast spelade och sökresultat görs om till
+ * den här formen, så att resten av sidan bara behöver hantera en typ.
+ *
+ * key är unik för varje rad i en lista. För senast spelade är det
+ * tidpunkten då låten spelades, eftersom samma låt kan förekomma flera
+ * gånger.
+ */
+type Song = {
+  key: string;
   id: string;
   name: string;
-  uri: string;
-  artists: { name: string }[];
-  album: { name: string; images: { url: string; width?: number }[] };
+  artist_name: string;
+  image_url: string | null;
 };
+
+/** Gör om en låt från servern till sidans egen form. */
+function toSong(track: { id: string; name: string; artist_name: string; image_url: string | null }, key?: string): Song {
+  return {
+    key: key ?? track.id,
+    id: track.id,
+    name: track.name,
+    artist_name: track.artist_name,
+    image_url: track.image_url,
+  };
+}
 
 export default function AddSongScreen() {
   const [query, setQuery] = useState('');
-  const [recentSongs, setRecentSongs] = useState<SpotifyTrack[]>([]);
-  const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
-  const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null);
+  const [recentSongs, setRecentSongs] = useState<Song[]>([]);
+  const [tracks, setTracks] = useState<Song[]>([]);
+  const [selectedTrack, setSelectedTrack] = useState<Song | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingRecent, setLoadingRecent] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  
+
+  /**
+   * Visar ett begripligt fel. Om Spotify-kopplingen har gått ut skickas
+   * användaren till inloggningen.
+   */
+  function handleSpotifyError(error: unknown) {
+    if (error instanceof SpotifyNotConnectedError) {
+      router.replace('/login');
+      return;
+    }
+    setErrorMessage(getErrorMessage(error));
+  }
 
   async function loadRecentSongs() {
     setLoadingRecent(true);
     try {
-      const token = await getSpotifyTestToken();
-      if (!token) {
-        setErrorMessage('Ingen Spotify-nyckel hittades. Logga in igen.');
-        return;
-      }
-
-      const response = await fetch(
-        'https://api.spotify.com/v1/me/player/recently-played?limit=5',
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-
-      if (response.status === 401) {
-        setErrorMessage('Spotify-nyckeln har gått ut. Logga in igen.');
-        return;
-      }
-      if (!response.ok) {
-        setErrorMessage(`Spotify svarade med fel ${response.status}.`);
-        return;
-      }
-
-      const data = await response.json();
-      setRecentSongs(
-        data.items.map((item: { track: SpotifyTrack }) => item.track),
-      );
+      const recent = await getRecentlyPlayed();
+      setRecentSongs(recent.map((track) => toSong(track, track.played_at)));
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Okänt fel');
+      handleSpotifyError(error);
     } finally {
       setLoadingRecent(false);
     }
@@ -89,76 +115,55 @@ export default function AddSongScreen() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const token = await getSpotifyTestToken();
-      if (!token) {
-        setErrorMessage('Ingen Spotify-nyckel hittades. Logga in igen.');
-        return;
-      }
-
-      const response = await fetch(
-        `https://api.spotify.com/v1/search?q=${encodeURIComponent(trimmed)}&type=track&limit=10`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-
-      if (response.status === 401) {
-        setErrorMessage('Spotify-nyckeln har gått ut. Logga in igen.');
-        return;
-      }
-      if (!response.ok) {
-        setErrorMessage(`Spotify svarade med fel ${response.status}.`);
-        return;
-      }
-
-      const data = await response.json();
-      setTracks(data.tracks.items);
+      const results = await searchTracks(trimmed);
+      setTracks(results.map((track) => toSong(track)));
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Okänt fel');
+      handleSpotifyError(error);
     } finally {
       setLoading(false);
     }
   }
 
+  /**
+   * Sparar den valda låten som dagens låt.
+   */
   async function confirmSelection() {
     if (!selectedTrack || saving) return;
 
     setSaving(true);
     try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
-      if (!userData.user) {
-        Alert.alert('Inte inloggad', 'Logga in för att välja dagens låt.');
-        return;
-      }
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
+      if (!userId) throw new Error('You need to be signed in to pick a song.');
 
-      const image = selectedTrack.album.images[0];
-      const today = new Date().toISOString().split('T')[0];
+      // song_date utelämnas: databasen sätter dagens datum i svensk tid.
       const { error } = await supabase.from('daily_songs').insert({
-        user_id: userData.user.id,
-        song_date: today,
+        user_id: userId,
         spotify_track_id: selectedTrack.id,
         track_name: selectedTrack.name,
-        artist_name: selectedTrack.artists.map((artist) => artist.name).join(', '),
-        image_url: image?.url ?? null,
+        artist_name: selectedTrack.artist_name,
+        image_url: selectedTrack.image_url,
       });
 
+      // 23505 = unik regel bruten: användaren har redan valt en låt idag.
+      if (error?.code === '23505') {
+        throw new Error("You've already picked today's song.");
+      }
       if (error) throw error;
-      Alert.alert(
-        'Klart',
-        `${selectedTrack.name} är vald som dagens låt.`,
-        [{ text: 'OK', onPress: () => router.replace('/') }],
-      );
+
       setSelectedTrack(null);
+      Alert.alert('Done', `${selectedTrack.name} is your song of the day.`, [
+        { text: 'OK', onPress: () => router.replace('/') },
+      ]);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Okänt fel';
-      Alert.alert('Kunde inte spara låten', message);
+      Alert.alert('Could not save the song', getErrorMessage(error));
     } finally {
       setSaving(false);
     }
   }
 
-  function renderTrack(track: SpotifyTrack, compact = false) {
-    const image = track.album.images[track.album.images.length - 1];
-    const selected = selectedTrack?.id === track.id;
+  function renderTrack(track: Song, compact = false) {
+    const selected = selectedTrack?.key === track.key;
 
     return (
       <Pressable
@@ -168,16 +173,16 @@ export default function AddSongScreen() {
         ]}
         onPress={() => setSelectedTrack(track)}
         accessibilityRole="button"
-        accessibilityLabel={`Välj ${track.name}`}
+        accessibilityLabel={`Pick ${track.name}`}
       >
-        {image && <Image source={{ uri: image.url }} style={compact ? styles.recentCover : styles.cover} />}
+        {track.image_url && (
+          <Image source={{ uri: track.image_url }} style={compact ? styles.recentCover : styles.cover} />
+        )}
         <View style={compact ? styles.recentText : styles.rowText}>
           <ThemedText style={styles.trackName} numberOfLines={1}>{track.name}</ThemedText>
-          <ThemedText style={styles.artist} numberOfLines={1}>
-            {track.artists.map((artist) => artist.name).join(', ')}
-          </ThemedText>
+          <ThemedText style={styles.artist} numberOfLines={1}>{track.artist_name}</ThemedText>
         </View>
-        {selected && <Ionicons name="checkmark-circle" size={22} />}
+        {selected && <Ionicons name="checkmark-circle" size={22} color={theme.text} />}
       </Pressable>
     );
   }
@@ -185,82 +190,85 @@ export default function AddSongScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ThemedText type="title" style={styles.title}>Add Track</ThemedText>
-      <ThemedText type="small" style={styles.subtitle}>
-        This will be your track for all groups today, so choose wisely. Or don't.
-      </ThemedText>
+        <ThemedText type="title" style={styles.title}>Add Track</ThemedText>
+        <ThemedText type="small" style={styles.subtitle}>
+          This will be your track for all groups today, so choose wisely. Or don't.
+        </ThemedText>
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <FlatList
-          data={tracks}
-          keyExtractor={(track) => track.id}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: 16, paddingBottom: 96 + insets.bottom }}
-          ListHeaderComponent={
-            <>
-              <ThemedText type="subtitle" style={styles.sectionTitle}>Recent tracks</ThemedText>
-              {loadingRecent ? (
-                <ActivityIndicator style={styles.recentLoading} />
-              ) : (
-                <FlatList
-                  horizontal
-                  data={recentSongs}
-                  keyExtractor={(track) => `recent-${track.id}`}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.recentList}
-                  renderItem={({ item }) => renderTrack(item, true)}
-                  ListEmptyComponent={
-                    <ThemedText style={styles.muted}>Inga recent tracks hittades.</ThemedText>
-                  }
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <FlatList
+            data={tracks}
+            keyExtractor={(track) => track.key}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ padding: 16, paddingBottom: 96 + insets.bottom }}
+            ListHeaderComponent={
+              <>
+                <ThemedText type="subtitle" style={styles.sectionTitle}>Recent tracks</ThemedText>
+                {loadingRecent ? (
+                  <ActivityIndicator style={styles.recentLoading} />
+                ) : (
+                  <FlatList
+                    horizontal
+                    data={recentSongs}
+                    keyExtractor={(track) => `recent-${track.key}`}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.recentList}
+                    renderItem={({ item }) => renderTrack(item, true)}
+                    ListEmptyComponent={
+                      <ThemedText style={styles.muted}>No recent tracks found.</ThemedText>
+                    }
+                  />
+                )}
+                <ThemedText type="subtitle" style={styles.sectionTitle}>Search results</ThemedText>
+                {errorMessage && <ThemedText style={styles.error}>{errorMessage}</ThemedText>}
+              </>
+            }
+            renderItem={({ item }) => renderTrack(item)}
+            ListEmptyComponent={
+              !loading ? (
+                <ThemedText style={styles.muted}>Search for a song to see results.</ThemedText>
+              ) : null
+            }
+          />
+
+          <View style={[styles.searchOverlay, { paddingBottom: insets.bottom + 8 }]} pointerEvents="box-none">
+            <GlassContainer spacing={8} style={styles.searchRow}>
+              <GlassView style={[styles.searchField, !glassSupported && styles.fallback]} glassEffectStyle="regular">
+                <Ionicons name="search" size={18} color={theme.text} />
+                <TextInput
+                  style={[styles.input, { color: theme.text }]}
+                  value={query}
+                  onChangeText={setQuery}
+                  onSubmitEditing={handleSearch}
+                  placeholder="Search for a song"
+                  placeholderTextColor="#888"
+                  returnKeyType="search"
+                  autoCorrect={false}
+                  clearButtonMode="while-editing"
                 />
-              )}
-              <ThemedText type="subtitle" style={styles.sectionTitle}>Search results</ThemedText>
-              {errorMessage && <ThemedText style={styles.error}>{errorMessage}</ThemedText>}
-            </>
-          }
-          renderItem={({ item }) => renderTrack(item)}
-          ListEmptyComponent={
-            !loading ? <ThemedText style={styles.muted}>Sök efter en låt för att se resultat.</ThemedText> : null
-          }
-        />
-
-        <View style={[styles.searchOverlay, { paddingBottom: insets.bottom + 8 }]} pointerEvents="box-none">
-          <GlassContainer spacing={8} style={styles.searchRow}>
-            <GlassView style={[styles.searchField, !glassSupported && styles.fallback]} glassEffectStyle="regular">
-              <Ionicons name="search" size={18} />
-              <TextInput
-                style={styles.input}
-                value={query}
-                onChangeText={setQuery}
-                onSubmitEditing={handleSearch}
-                placeholder="Sök efter en låt"
-                returnKeyType="search"
-                autoCorrect={false}
-                clearButtonMode="while-editing"
-              />
-            </GlassView>
-            <GlassView style={[styles.searchButton, !glassSupported && styles.fallback]} glassEffectStyle="regular" isInteractive>
-              <Pressable onPress={handleSearch} disabled={loading} style={styles.searchButtonInner}>
-                {loading ? <ActivityIndicator /> : <Ionicons name="arrow-forward" size={20} />}
-              </Pressable>
-            </GlassView>
-          </GlassContainer>
-          <Pressable
-            style={[
-              styles.confirmButton,
-              { backgroundColor: theme.backgroundElement, borderColor: theme.text },
-              !selectedTrack && styles.buttonDisabled,
-            ]}
-            onPress={confirmSelection}
-            disabled={!selectedTrack || saving}
-          >
-            {saving ? <ActivityIndicator /> : <ThemedText style={styles.confirmText}>Bekräfta vald låt</ThemedText>}
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
+              </GlassView>
+              <GlassView style={[styles.searchButton, !glassSupported && styles.fallback]} glassEffectStyle="regular" isInteractive>
+                <Pressable onPress={handleSearch} disabled={loading} style={styles.searchButtonInner}>
+                  {loading ? <ActivityIndicator /> : <Ionicons name="arrow-forward" size={20} color={theme.text} />}
+                </Pressable>
+              </GlassView>
+            </GlassContainer>
+            <Pressable
+              style={[
+                styles.confirmButton,
+                { backgroundColor: theme.backgroundElement, borderColor: theme.text },
+                !selectedTrack && styles.buttonDisabled,
+              ]}
+              onPress={confirmSelection}
+              disabled={!selectedTrack || saving}
+            >
+              {saving ? <ActivityIndicator /> : <ThemedText style={styles.confirmText}>Confirm song</ThemedText>}
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -285,7 +293,7 @@ const styles = StyleSheet.create({
   trackName: { fontSize: 15, fontWeight: '600' },
   artist: { fontSize: 13, marginTop: 2 },
   muted: { paddingVertical: 12 },
-  error: { marginBottom: 8 },
+  error: { marginBottom: 8, color: '#c0392b' },
   searchOverlay: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   searchField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: SEARCH_BAR_HEIGHT, borderRadius: 24, paddingHorizontal: 16 },
