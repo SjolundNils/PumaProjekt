@@ -12,6 +12,7 @@ import { ActionButton } from '@/components/ui/action-button';
 import { BackButton } from '@/components/ui/back-button';
 import { Friendship, getFriends, removeFriendship } from '@/lib/friends';
 import { createFriendsStyles } from '@/styles/friends';
+import { createTextStyles } from '@/styles/text';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -32,6 +33,7 @@ export default function FriendsScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const styles = createFriendsStyles(theme);
+  const textStyles = createTextStyles(theme);
 
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [query, setQuery] = useState('');
@@ -105,8 +107,8 @@ export default function FriendsScreen() {
 
       <View style={styles.titleRow}>
         <View>
-          <Text style={styles.title}>Friends</Text>
-          <Text style={styles.subtitle}>Your music lovers</Text>
+          <Text style={textStyles.pageTitle}>Friends</Text>
+          <Text style={textStyles.pageSubtitle}>Your music lovers</Text>
         </View>
         <ActionButton
           icon="add"
@@ -120,7 +122,7 @@ export default function FriendsScreen() {
       <View style={styles.searchBox}>
         <Ionicons name="search" size={20} color={theme.text} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, textStyles.body]}
           value={query}
           onChangeText={setQuery}
           placeholder="Search"
@@ -140,8 +142,8 @@ export default function FriendsScreen() {
         <ActivityIndicator style={{ marginTop: 40 }} />
       ) : error ? (
         <View style={styles.center}>
-          <Text style={styles.emptyTitle}>Something went wrong</Text>
-          <Text style={styles.emptyText}>{error}</Text>
+          <Text style={textStyles.sectionTitle}>Something went wrong</Text>
+          <Text style={[styles.emptyText, textStyles.secondary]}>{error}</Text>
           <Pressable
             style={styles.retryButton}
             onPress={() => {
@@ -149,7 +151,7 @@ export default function FriendsScreen() {
               load();
             }}
           >
-            <Text style={styles.retryText}>Try again</Text>
+            <Text style={textStyles.button}>Try again</Text>
           </Pressable>
         </View>
       ) : (
@@ -174,7 +176,7 @@ export default function FriendsScreen() {
               ) : (
                 <View style={[styles.avatar, styles.avatarEmpty]} />
               )}
-              <Text style={styles.name} numberOfLines={1}>
+              <Text style={[styles.name, textStyles.body]} numberOfLines={1}>
                 {item.display_name ?? 'Unknown'}
               </Text>
               <Pressable style={styles.menuButton} onPress={() => openMenu(item)} hitSlop={8}>
@@ -185,11 +187,11 @@ export default function FriendsScreen() {
           ListEmptyComponent={
             <View style={styles.center}>
               {query.trim() ? (
-                <Text style={styles.emptyText}>No friends match "{query.trim()}"</Text>
+                <Text style={[styles.emptyText, textStyles.secondary]}>No friends match "{query.trim()}"</Text>
               ) : (
                 <>
-                  <Text style={styles.emptyTitle}>No friends yet</Text>
-                  <Text style={styles.emptyText}>Tap "Add Friends" to find people.</Text>
+                  <Text style={textStyles.sectionTitle}>No friends yet</Text>
+                  <Text style={[styles.emptyText, textStyles.secondary]}>Tap "Add Friends" to find people.</Text>
                 </>
               )}
             </View>

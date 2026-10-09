@@ -6,8 +6,6 @@ export function createFriendsStyles(theme: (typeof Colors)['light'] | (typeof Co
   return StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.background, paddingHorizontal: 16 },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 16 },
-  title: { fontSize: 32, fontWeight: '800', color: theme.text },
-  subtitle: { fontSize: 16, color: theme.textSecondary, marginTop: 2 },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -24,11 +22,11 @@ export function createFriendsStyles(theme: (typeof Colors)['light'] | (typeof Co
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
-  searchInput: { flex: 1, fontSize: 16, color: theme.text },
+  searchInput: { flex: 1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
   avatar: { width: 44, height: 44, borderRadius: 22 },
   avatarEmpty: { backgroundColor: theme.backgroundElement },
-  name: { flex: 1, fontSize: 16, color: theme.text },
+  name: { flex: 1 },
   menuButton: {
     width: 30,
     height: 30,
@@ -38,9 +36,7 @@ export function createFriendsStyles(theme: (typeof Colors)['light'] | (typeof Co
     justifyContent: 'center',
   },
   center: { alignItems: 'center', marginTop: 48, paddingHorizontal: 24, gap: 6 },
-  emptyTitle: { fontSize: 18, fontWeight: '700' },
-  emptyText: { color: theme.textSecondary, textAlign: 'center' },
+  emptyText: { textAlign: 'center' },
   retryButton: { marginTop: 12, backgroundColor: theme.backgroundElement, borderRadius: 999, paddingVertical: 10, paddingHorizontal: 20 },
-  retryText: { color: theme.text, fontWeight: '600' },
   });
 }
