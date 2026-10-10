@@ -36,9 +36,9 @@ import { RateButton } from '@/components/rating/rate-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { getErrorMessage } from '@/lib/errors';
-import { fetchProfile, type ProfileData, type SpotifyProfile } from '@/lib/profile';
+import { fetchProfile, type ProfileData } from '@/lib/profile';
 import { fetchMyRatings } from '@/lib/ratings';
-import { getSpotifyProfile } from '@/lib/spotifyData';
+import { getRecentlyPlayed, getSpotifyProfile, RecentTrack, SpotifyProfileData } from '@/lib/spotifyData';
 
 type Props = {
   /** Användaren vars profil visas. */
@@ -53,8 +53,9 @@ type Props = {
 
 export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 0 }: Props) {
   const [data, setData] = useState<ProfileData | null>(null);
-  const [spotifyProfile, setSpotifyProfile] = useState<SpotifyProfile | null>(null);
+  const [spotifyProfile, setSpotifyProfile] = useState<SpotifyProfileData | null>(null);
   const [myRating, setMyRating] = useState<number | undefined>(undefined);
+  const [recentSongs, setRecentSongs] = useState<RecentTrack[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -70,7 +71,9 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
       setErrorMessage(null);
 
       const spotifyData = await getSpotifyProfile();
-      setSpotifyProfile({ user_name: spotifyData.display_name, image_url: spotifyData.image_url });
+      setSpotifyProfile({ display_name: spotifyData.display_name, image_url: spotifyData.image_url });
+
+      setRecentSongs(await getRecentlyPlayed());
 
       if (!isOwn && result.todaysSong) {
         const ratings = await fetchMyRatings([result.todaysSong.id]);
@@ -172,6 +175,20 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
         ) : (
           <AlbumGrid albums={albums} />
         )}
+
+        <ThemedText type="subtitle">Recent songs</ThemedText>
+        {recentSongs.map((song) => (
+          <View key={`${song.id}-${song.played_at}`} style={styles.songRow}>
+            {song.image_url && (
+              <Image source={{ uri: song.image_url }} style={styles.songCover} />
+            )}
+        
+            <View>
+              <ThemedText style={styles.songName}>{song.name}</ThemedText>
+              <ThemedText style={styles.dim}>{song.artist_name}</ThemedText>
+            </View>
+          </View>
+        ))}
       </ScrollView>
     </ThemedView>
   );
