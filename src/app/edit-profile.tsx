@@ -10,7 +10,7 @@
  */
 
 import { signOut } from '@/lib/auth';
-import { getRecentlyPlayed, getSpotifyProfile, RecentTrack, searchAlbums } from '@/lib/spotifyData';
+import { getSpotifyProfile, searchAlbums } from '@/lib/spotifyData';
 import { SpotifyNotConnectedError } from '@/lib/spotifySearch';
 import { supabase } from '@/lib/supabase';
 import { router, useFocusEffect } from 'expo-router';
@@ -83,7 +83,6 @@ export default function EditProfileScreen() {
   const [spotifyAlbumSearchResult, setSpotifyAlbumSearchResult] = useState<SpotifyAlbumSearchResult[]>([]);
   const [albumQuery, setAlbumQuery] = useState('');
   const [editAlbumIndex, setEditAlbumIndex] = useState<number | null>(null);
-  const [recentSongs, setRecentSongs] = useState<RecentTrack[]>([]);
   const [displayName, setDisplayName] = useState('');
   const [biography, setBiography] = useState('');
   const [loading, setLoading] = useState(true);
@@ -148,7 +147,6 @@ export default function EditProfileScreen() {
     useCallback(() => {
       loadProfile();
       loadSpotifyProfile();
-      loadRecentSongs();
     }, [])
   );
 
@@ -398,38 +396,9 @@ export default function EditProfileScreen() {
             </View>
           ))}
         </View>
-
-
-        <Text style={styles.sectionTitle}>Recent songs</Text>
-
-        {recentSongs.map((song) => (
-          <View key={`${song.id}-${song.played_at}`} style={styles.songRow}>
-            {song.image_url && (
-              <Image source={{ uri: song.image_url }} style={styles.songCover} />
-            )}
-
-            <View>
-              <Text style={styles.songName}>{song.name}</Text>
-              <Text style={styles.songArtist}>{song.artist_name}</Text>
-            </View>
-          </View>
-        ))}
       </ScrollView>
     </SafeAreaView>
   );
-
-    async function loadRecentSongs() {
-    try {
-      setRecentSongs(await getRecentlyPlayed());
-    } catch (error) {
-      // Senaste låtar är inte kritiskt: bara en logg, utom när kopplingen saknas
-      if (error instanceof SpotifyNotConnectedError) {
-        router.replace('/login');
-        return;
-      }
-      console.log('Kunde inte hämta senaste låtar:', error);
-    }
-  }
 }
 
 const styles = StyleSheet.create({
