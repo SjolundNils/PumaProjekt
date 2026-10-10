@@ -16,16 +16,16 @@ import { supabase } from '@/lib/supabase';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -84,7 +84,6 @@ export default function EditProfileScreen() {
   const [albumQuery, setAlbumQuery] = useState('');
   const [editAlbumIndex, setEditAlbumIndex] = useState<number | null>(null);
   const [recentSongs, setRecentSongs] = useState<RecentTrack[]>([]);
-  const [dailySong, setDailySong] = useState<DailySong | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [biography, setBiography] = useState('');
   const [loading, setLoading] = useState(true);
@@ -150,41 +149,8 @@ export default function EditProfileScreen() {
       loadProfile();
       loadSpotifyProfile();
       loadRecentSongs();
-      loadDailySong();
     }, [])
   );
-
-  async function loadDailySong() {
-    try{
-      const {data: userData} = await supabase.auth.getUser();
-
-      if(!userData.user){
-        return;
-      }
-
-      const { data: today, error: dateError } = await supabase.rpc('app_today');
-      if (dateError || !today) {
-        console.log('Kunde inte hämta dagens datum', dateError);
-        return;
-      }
-
-      const {data, error} = await supabase
-        .from('daily_songs')
-        .select('track_name, artist_name, image_url, song_date')
-        .eq('user_id', userData.user.id)
-        .eq('song_date', today)
-        .maybeSingle();
-
-      if(error){
-        console.log('Kunde inte hämta dagens låt', error);
-        return;
-      }
-
-      setDailySong(data);
-    } catch (error) {
-      console.log('Fel när dagens låt hämtadas', error);
-    }
-  }
 
     const searchAlbum = (text: string) => {
     setAlbumQuery(text);
@@ -448,32 +414,6 @@ export default function EditProfileScreen() {
             </View>
           </View>
         ))}
-
-        <Text style={styles.sectionTitle}>Todays song</Text>
-
-        {dailySong ?(
-          <View style={styles.songRow}>
-            {dailySong.image_url && (
-              <Image
-                source={{ uri: dailySong.image_url }}
-                style={styles.songCover}
-              />
-            )}
-
-            <View>
-              <Text style={styles.songName}>
-                {dailySong.track_name}
-              </Text>
-
-              <Text style={styles.songArtist}>
-                {dailySong.artist_name}
-              </Text>
-            </View>
-        
-          </View>
-        ) : (
-          <Text>No song chosen today.</Text>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
