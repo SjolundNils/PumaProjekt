@@ -27,6 +27,11 @@ export type Profile = {
   biography: string | null;
 };
 
+export type SpotifyProfile = {
+  user_name: string | null;
+  image_url: string | null;
+};
+
 export type FavoriteAlbum = {
   position: number;
   spotify_album_id: string;

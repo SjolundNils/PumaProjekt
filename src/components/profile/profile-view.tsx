@@ -21,14 +21,14 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
-    ActivityIndicator,
-    Image,
-    Linking,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    View,
+  ActivityIndicator,
+  Image,
+  Linking,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
 
 import { AlbumGrid } from '@/components/profile/album-grid';
@@ -36,8 +36,9 @@ import { RateButton } from '@/components/rating/rate-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { getErrorMessage } from '@/lib/errors';
-import { fetchProfile, type ProfileData } from '@/lib/profile';
+import { fetchProfile, type ProfileData, type SpotifyProfile } from '@/lib/profile';
 import { fetchMyRatings } from '@/lib/ratings';
+import { getSpotifyProfile } from '@/lib/spotifyData';
 
 type Props = {
   /** Användaren vars profil visas. */
@@ -52,6 +53,7 @@ type Props = {
 
 export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 0 }: Props) {
   const [data, setData] = useState<ProfileData | null>(null);
+  const [spotifyProfile, setSpotifyProfile] = useState<SpotifyProfile | null>(null);
   const [myRating, setMyRating] = useState<number | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -66,6 +68,9 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
       const result = await fetchProfile(userId);
       setData(result);
       setErrorMessage(null);
+
+      const spotifyData = await getSpotifyProfile();
+      setSpotifyProfile({ user_name: spotifyData.display_name, image_url: spotifyData.image_url });
 
       if (!isOwn && result.todaysSong) {
         const ratings = await fetchMyRatings([result.todaysSong.id]);
@@ -115,8 +120,8 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         <View style={styles.header}>
-          {profile.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+          {spotifyProfile?.image_url ? (
+            <Image source={{ uri: spotifyProfile?.image_url }} style={styles.avatar} />
           ) : (
             <View style={[styles.avatar, styles.placeholder]} />
           )}
