@@ -321,7 +321,6 @@ export default function EditProfileScreen() {
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.screen} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
-          <ThemedText style={styles.title}>Profiltest</ThemedText>
 
           <View style={styles.profileImageContainer}>
             {spotifyProfile?.image_url && (
