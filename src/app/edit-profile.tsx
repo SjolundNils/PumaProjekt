@@ -9,6 +9,9 @@
  * kolumnrättigheterna att endast tillåtna fält kan ändras.
  */
 
+import { ThemedText } from '@/components/themed-text';
+import { ThemedTextInput } from '@/components/themed-text-input';
+import { ThemedView } from '@/components/themed-view';
 import { signOut } from '@/lib/auth';
 import { getSpotifyProfile, searchAlbums } from '@/lib/spotifyData';
 import { SpotifyNotConnectedError } from '@/lib/spotifySearch';
@@ -277,7 +280,7 @@ export default function EditProfileScreen() {
 
   if (editAlbumIndex !== null) {
     return (
-         <SafeAreaView style={styles.container} edges={['bottom']}>
+         <SafeAreaView style={styles.screen} edges={['bottom']}>
 
         <Text style={styles.title}>Välj album för plats {editAlbumIndex}</Text>
 
@@ -315,94 +318,95 @@ export default function EditProfileScreen() {
   }
 
   return (
-<SafeAreaView style={styles.container} edges={['bottom']}>
-  <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Profiltest</Text>
+    <ThemedView style={styles.screen}>
+      <SafeAreaView style={styles.screen} edges={['bottom']}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <ThemedText style={styles.title}>Profiltest</ThemedText>
 
-        <View style={styles.profileImageContainer}>
-          {spotifyProfile?.image_url && (
-            <Image source={{ uri: spotifyProfile.image_url }} style={styles.avatar} />
-          )}
-        </View>
+          <View style={styles.profileImageContainer}>
+            {spotifyProfile?.image_url && (
+              <Image source={{ uri: spotifyProfile.image_url }} style={styles.avatar} />
+            )}
+          </View>
 
-        <Text style={styles.label}>Visningsnamn</Text>
-        <TextInput
-          style={styles.input}
-          value={displayName}
-          onChangeText={setDisplayName}
-          placeholder="Ditt namn"
-        />
-        <Text style={styles.label}>{spotifyProfile?.user_name ? '@' + spotifyProfile.user_name : 'Inget namn angivet'}</Text>
+          <ThemedText style={styles.label}>Visningsnamn</ThemedText>
+          <ThemedTextInput
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder="Ditt namn"
+          />
+          <ThemedText style={styles.label}>{spotifyProfile?.user_name ? '@' + spotifyProfile.user_name : 'Inget namn angivet'}</ThemedText>
 
-        <Text style={styles.label}>Biografi</Text>
-        <TextInput
-          style={[styles.input, styles.multiline]}
-          value={biography}
-          onChangeText={setBiography}
-          placeholder="Berätta något om dig själv"
-          multiline
-        />
+          <ThemedText style={styles.label}>Biografi</ThemedText>
+          <ThemedTextInput
+            style={[styles.multiline]}
+            value={biography}
+            onChangeText={setBiography}
+            placeholder="Berätta något om dig själv"
+            multiline
+          />
 
-        <Pressable
-          style={[styles.button, { backgroundColor: '#c0392b' }]}
-          onPress={async () => {
-            await signOut();
-            Alert.alert('Utloggad', 'Du är nu utloggad.');
-          }}
-        >
-          <Text style={styles.buttonText}>Logga ut</Text>
-        </Pressable>
+          <Pressable
+            style={[styles.button, { backgroundColor: '#c0392b' }]}
+            onPress={async () => {
+              await signOut();
+              Alert.alert('Utloggad', 'Du är nu utloggad.');
+            }}
+          >
+            <ThemedText style={styles.buttonText}>Logga ut</ThemedText>
+          </Pressable>
 
-        <Pressable style={styles.button} onPress={handleSave} disabled={saving}>
-          <Text style={styles.buttonText}>{saving ? 'Sparar...' : 'Spara'}</Text>
-        </Pressable>
+          <Pressable style={styles.button} onPress={handleSave} disabled={saving}>
+            <ThemedText style={styles.buttonText}>{saving ? 'Sparar...' : 'Spara'}</ThemedText>
+          </Pressable>
 
-        <Text style={styles.sectionTitle}>Favoritalbum</Text>
-        <View style={styles.grid}>
-          {slots.map((album, index) => (
-            <View key={index} style={styles.slot}>
-              <View>
-                <TouchableOpacity
-                 activeOpacity={0.8}
-                 onPress={() => setEditAlbumIndex(index + 1)}
-                >
-                {album?.image_url ? (
-                  <Image source={{ uri: album.image_url }} style={styles.albumCover} />
-                ) : (
-                  <View style={[styles.albumCover, styles.emptyCover]}>
-                    <Text style={styles.emptyText}>{index + 1}</Text>
-                  </View>
-                )}
-                </TouchableOpacity>
-               {/* knapp för att ta bort favoritalbum.*/}
-               {album && (
-                <TouchableOpacity
-                 style={styles.removeButton}
-                 onPress={() => removeFavoriteAlbum(index + 1)}
-               >
-                <Text style={styles.removeButtonText}>✕</Text>
-               </TouchableOpacity>
-               )}
-              </View>
+          <ThemedText style={styles.sectionTitle}>Favoritalbum</ThemedText>
+          <View style={styles.grid}>
+            {slots.map((album, index) => (
+              <View key={index} style={styles.slot}>
+                <View>
+                  <TouchableOpacity
+                   activeOpacity={0.8}
+                   onPress={() => setEditAlbumIndex(index + 1)}
+                  >
+                  {album?.image_url ? (
+                    <Image source={{ uri: album.image_url }} style={styles.albumCover} />
+                  ) : (
+                    <View style={[styles.albumCover, styles.emptyCover]}>
+                      <ThemedText style={styles.emptyText}>{index + 1}</ThemedText>
+                    </View>
+                  )}
+                  </TouchableOpacity>
+                 {/* knapp för att ta bort favoritalbum.*/}
+                 {album && (
+                  <TouchableOpacity
+                   style={styles.removeButton}
+                   onPress={() => removeFavoriteAlbum(index + 1)}
+                  >
+                  <ThemedText style={styles.removeButtonText}>✕</ThemedText>
+                 </TouchableOpacity>
+                 )}
+                </View>
               
-              <Text style={styles.albumName} numberOfLines={1}>
-                {album?.album_name ?? 'Tom plats'}
-              </Text>
-              {album && (
-                <Text style={styles.albumArtist} numberOfLines={1}>
-                  {album.artist_name}
-                </Text>
-              )}
-            </View>
-          ))}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+                <ThemedText style={styles.albumName} numberOfLines={1}>
+                  {album?.album_name ?? 'Tom plats'}
+                </ThemedText>
+                {album && (
+                  <ThemedText style={styles.albumArtist} numberOfLines={1}>
+                    {album.artist_name}
+                  </ThemedText>
+                )}
+              </View>
+           ))}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  screen: { flex: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content: { padding: 16, gap: 8 },
   title: { fontSize: 24, fontWeight: '700', marginBottom: 8 },
@@ -416,7 +420,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   slot: { width: '30%' },
   albumCover: { width: '100%', aspectRatio: 1, borderRadius: 6 },
-  emptyCover: { backgroundColor: '#eee', justifyContent: 'center', alignItems: 'center' },
+  emptyCover: { backgroundColor: 'rgba(128, 128, 128, 0.15)', justifyContent: 'center', alignItems: 'center' },
   emptyText: { fontSize: 20, color: '#999' },
   albumName: { fontSize: 13, fontWeight: '600', marginTop: 4 },
   albumArtist: { fontSize: 12, color: '#666' },
