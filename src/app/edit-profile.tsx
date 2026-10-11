@@ -11,6 +11,7 @@
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedTextInput } from '@/components/themed-text-input';
+import { ThemedTouchableOpacity } from '@/components/themed-touchable-oppacity';
 import { ThemedView } from '@/components/themed-view';
 import { signOut } from '@/lib/auth';
 import { getSpotifyProfile, searchAlbums } from '@/lib/spotifyData';
@@ -378,12 +379,12 @@ export default function EditProfileScreen() {
                   </TouchableOpacity>
                  {/* knapp för att ta bort favoritalbum.*/}
                  {album && (
-                  <TouchableOpacity
+                  <ThemedTouchableOpacity
                    style={styles.removeButton}
                    onPress={() => removeFavoriteAlbum(index + 1)}
                   >
-                  <ThemedText style={styles.removeButtonText}>✕</ThemedText>
-                 </TouchableOpacity>
+                    <ThemedText style={styles.removeButtonText}>✕</ThemedText>
+                  </ThemedTouchableOpacity>
                  )}
                 </View>
               
@@ -440,12 +441,10 @@ const styles = StyleSheet.create({
     marginTop: -16,
     marginLeft: -16,
     borderRadius: 20,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
   removeButtonText: {
-    color: '#000',
     fontSize: 16,
     fontWeight: 'bold',
   },
