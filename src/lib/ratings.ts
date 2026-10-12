@@ -46,3 +46,44 @@ export async function fetchMyRatings(dailySongIds: number[]): Promise<Record<num
 
   return Object.fromEntries(data.map((row) => [row.daily_song_id, row.rating]));
 }
+
+  /**
+ * Hämtar genomsnittsbetyget för en lista med dagens låtar.
+ *
+ * @param dailySongIds ID:n för låtarna i daily_songs.
+ * @returns Ett objekt med låtens id och dess genomsnittsbetyg.
+ */
+export async function fetchAverageRatings(
+  dailySongIds: number[]
+): Promise<Record<number, number>> {
+  if (dailySongIds.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from('song_ratings')
+    .select('daily_song_id, rating')
+    .in('daily_song_id', dailySongIds);
+
+  if (error) throw error;
+
+  const averages: Record<number, number> = {};
+
+  for (const songId of dailySongIds) {
+    // Hittar alla betyg för den här låten
+    const songRatings = data.filter(
+      (row) => row.daily_song_id === songId
+    );
+
+    if (songRatings.length === 0) continue;
+
+    // Räknar ut genomsnittet
+    const total = songRatings.reduce(
+      (sum, row) => sum + row.rating,
+      0
+    );
+
+    averages[songId] = total / songRatings.length;
+  }
+
+  return averages;
+
+}
