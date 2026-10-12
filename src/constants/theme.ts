@@ -18,6 +18,9 @@ export const Colors = {
     accentIndigo: '#6155F5',
     accentOrange: '#F97316',
     accentText: '#FFFFFF',
+    destructiveBackground: '#FFE3E4',
+    destructiveBorder: '#FF383C',
+    destructiveText: '#FF383C',
   },
   dark: {
     text: '#ffffff',
@@ -29,6 +32,9 @@ export const Colors = {
     accentIndigo: '#6155F5',
     accentOrange: '#F97316',
     accentText: '#FFFFFF',
+    destructiveBackground: '#3A1E22',
+    destructiveBorder: '#FF6961',
+    destructiveText: '#FF6961',
   },
 } as const;
 
