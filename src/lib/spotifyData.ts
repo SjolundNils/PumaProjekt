@@ -28,7 +28,7 @@ async function call<T>(action: string, params: Record<string, unknown> = {}): Pr
 }
 
 /** Den inloggade användarens Spotify-namn och profilbild. */
-export const getSpotifyProfile = () => call<SpotifyProfileData>('me');
+export const getMySpotifyProfile = () => call<SpotifyProfileData>('me');
 
 /** Söker album (max 10 träffar). */
 export async function searchAlbums(query: string): Promise<AlbumHit[]> {

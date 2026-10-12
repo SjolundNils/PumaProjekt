@@ -14,7 +14,7 @@ import { ThemedTextInput } from '@/components/themed-text-input';
 import { ThemedTouchableOpacity } from '@/components/themed-touchable-oppacity';
 import { ThemedView } from '@/components/themed-view';
 import { signOut } from '@/lib/auth';
-import { getSpotifyProfile, searchAlbums } from '@/lib/spotifyData';
+import { getMySpotifyProfile, searchAlbums } from '@/lib/spotifyData';
 import { SpotifyNotConnectedError } from '@/lib/spotifySearch';
 import { supabase } from '@/lib/supabase';
 import { router, useFocusEffect } from 'expo-router';
@@ -137,7 +137,7 @@ export default function EditProfileScreen() {
 
     async function loadSpotifyProfile() {
     try {
-      const data = await getSpotifyProfile();
+      const data = await getMySpotifyProfile();
       setSpotifyProfile({ user_name: data.display_name, image_url: data.image_url });
     } catch (error) {
       handleSpotifyError(error, 'Kunde inte hämta Spotify-profilen');

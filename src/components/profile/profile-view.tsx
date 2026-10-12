@@ -38,7 +38,7 @@ import { ThemedView } from '@/components/themed-view';
 import { getErrorMessage } from '@/lib/errors';
 import { fetchProfile, type ProfileData } from '@/lib/profile';
 import { fetchMyRatings } from '@/lib/ratings';
-import { getRecentlyPlayed, getSpotifyProfile, RecentTrack, SpotifyProfileData } from '@/lib/spotifyData';
+import { getRecentlyPlayed, RecentTrack } from '@/lib/spotifyData';
 
 type Props = {
   /** Användaren vars profil visas. */
@@ -53,7 +53,7 @@ type Props = {
 
 export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 0 }: Props) {
   const [data, setData] = useState<ProfileData | null>(null);
-  const [spotifyProfile, setSpotifyProfile] = useState<SpotifyProfileData | null>(null);
+  
   const [myRating, setMyRating] = useState<number | undefined>(undefined);
   const [recentSongs, setRecentSongs] = useState<RecentTrack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,11 +70,13 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
       setData(result);
       setErrorMessage(null);
 
-      const spotifyData = await getSpotifyProfile();
-      setSpotifyProfile({ display_name: spotifyData.display_name, image_url: spotifyData.image_url });
-
-      setRecentSongs(await getRecentlyPlayed());
-
+      if (isOwn) {
+        try {
+          setRecentSongs(await getRecentlyPlayed());
+        } catch (spotifyError) {
+          console.log('Kunde inte hämta senast spelade:', spotifyError);
+        }
+      }
       if (!isOwn && result.todaysSong) {
         const ratings = await fetchMyRatings([result.todaysSong.id]);
         setMyRating(ratings[result.todaysSong.id]);
@@ -123,8 +125,8 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         <View style={styles.header}>
-          {spotifyProfile?.image_url ? (
-            <Image source={{ uri: spotifyProfile?.image_url }} style={styles.avatar} />
+          {profile.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
           ) : (
             <View style={[styles.avatar, styles.placeholder]} />
           )}
@@ -176,8 +178,10 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
           <AlbumGrid albums={albums} />
         )}
 
-        <ThemedText type="subtitle">Recent songs</ThemedText>
-        {recentSongs.map((song) => (
+       {isOwn && recentSongs.length > 0 && (
+          <ThemedText type="subtitle">Recent songs</ThemedText>
+        )}
+        {isOwn && recentSongs.map((song) => (
           <View key={`${song.id}-${song.played_at}`} style={styles.songRow}>
             {song.image_url && (
               <Image source={{ uri: song.image_url }} style={styles.songCover} />
