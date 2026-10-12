@@ -16,7 +16,10 @@ export const Colors = {
     textSecondary: '#60646C',
 
     accentIndigo: '#6155F5',
-    accentOrange: '#F97316',
+    accentOrange: '#FF8D28',
+    accentOrangeButtonBackground: '#FF8D28',
+    accentOrangeButtonBorder: 'transparent',
+    accentOrangeButtonText: '#FFFFFF',
     accentText: '#FFFFFF',
     destructiveBackground: '#FFE3E4',
     destructiveBorder: '#FF383C',
@@ -30,7 +33,10 @@ export const Colors = {
     textSecondary: '#B0B4BA',
 
     accentIndigo: '#6155F5',
-    accentOrange: '#F97316',
+    accentOrange: '#FF8D28',
+    accentOrangeButtonBackground: 'transparent',
+    accentOrangeButtonBorder: '#FF8D28',
+    accentOrangeButtonText: '#FF8D28',
     accentText: '#FFFFFF',
     destructiveBackground: '#3A1E22',
     destructiveBorder: '#FF6961',
