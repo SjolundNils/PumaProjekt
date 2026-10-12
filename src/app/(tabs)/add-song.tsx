@@ -17,6 +17,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 import { getErrorMessage } from '@/lib/errors';
 import { getRecentlyPlayed } from '@/lib/spotifyData';
+import { syncPlaylists } from '@/lib/spotifyPlaylists';
 import { searchTracks, SpotifyNotConnectedError } from '@/lib/spotifySearch';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,16 +25,16 @@ import { GlassContainer, GlassView, isLiquidGlassAvailable } from 'expo-glass-ef
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
+	ActivityIndicator,
+	Alert,
+	FlatList,
+	Image,
+	KeyboardAvoidingView,
+	Platform,
+	Pressable,
+	StyleSheet,
+	TextInput,
+	View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -150,6 +151,11 @@ export default function AddSongScreen() {
         throw new Error("You've already picked today's song.");
       }
       if (error) throw error;
+
+      // Lägger låten i spellistorna för alla grupper användaren är med i.
+      // Misslyckas synken ska valet ändå gälla: syncPlaylists kastar inte, och
+      // nattjobbet hinner ikapp vid nästa körning.
+      await syncPlaylists();
 
       setSelectedTrack(null);
       Alert.alert('Done', `${selectedTrack.name} is your song of the day.`, [
