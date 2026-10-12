@@ -6,9 +6,11 @@
  * visas "Joined", och finns ingen inbjudan visas ingenting.
  */
 import { ThemedText } from '@/components/themed-text';
+import { ActionButton } from '@/components/ui/action-button';
+import { Typography } from '@/constants/theme';
 import { acceptInvite, declineInvite, getInviteState } from '@/lib/groupInvites';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
 
 type Props = { groupId: string };
 type State = 'loading' | 'pending' | 'member' | 'declined' | 'none';
@@ -47,18 +49,26 @@ export function InviteButtons({ groupId }: Props) {
   }
 
   if (state === 'loading') return <ActivityIndicator style={styles.spinner} />;
-  if (state === 'member') return <ThemedText style={styles.done}>✓ Joined</ThemedText>;
-  if (state === 'declined') return <ThemedText style={styles.done}>Declined</ThemedText>;
+  if (state === 'member') return <ThemedText themeColor="textSecondary" style={Typography.bodySmall}>✓ Joined</ThemedText>;
+  if (state === 'declined') return <ThemedText themeColor="textSecondary" style={Typography.bodySmall}>Declined</ThemedText>;
   if (state === 'none') return null;
 
   return (
     <View style={styles.row}>
-      <Pressable style={[styles.join, busy && styles.disabled]} onPress={() => handle('accept')} disabled={busy}>
-        <ThemedText style={styles.joinText}>Join</ThemedText>
-      </Pressable>
-      <Pressable style={[styles.decline, busy && styles.disabled]} onPress={() => handle('decline')} disabled={busy}>
-        <ThemedText style={styles.declineText}>Decline</ThemedText>
-      </Pressable>
+      <ActionButton
+        label="Join"
+        color="indigo"
+        size="small"
+        onPress={() => handle('accept')}
+        disabled={busy}
+      />
+      <ActionButton
+        label="Decline"
+        color="destructiveSecondary"
+        size="small"
+        onPress={() => handle('decline')}
+        disabled={busy}
+      />
     </View>
   );
 }
@@ -66,10 +76,5 @@ export function InviteButtons({ groupId }: Props) {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 8, marginTop: 6 },
   spinner: { alignSelf: 'flex-start', marginTop: 6 },
-  join: { backgroundColor: '#5B4DF5', borderRadius: 999, paddingVertical: 6, paddingHorizontal: 16 },
-  joinText: { color: '#fff', fontWeight: '600' },
-  decline: { backgroundColor: '#FDE4E4', borderRadius: 999, paddingVertical: 6, paddingHorizontal: 16 },
-  declineText: { color: '#D33', fontWeight: '600' },
   done: { marginTop: 6, opacity: 0.6, fontWeight: '600' },
-  disabled: { opacity: 0.5 },
 });

@@ -1,25 +1,25 @@
 import { StyleSheet } from 'react-native';
 
-import type { AppTheme } from '@/constants/theme';
+import { Typography, type AppTheme } from '@/constants/theme';
 
 export function createTextStyles(theme: AppTheme) {
   return StyleSheet.create({
     pageTitle: {
-      fontSize: 32,
+      ...Typography.pageTitle,
       fontWeight: '800',
       color: theme.text,
     },
     pageSubtitle: {
-      fontSize: 16,
+      ...Typography.body,
       color: theme.textSecondary,
       marginTop: 2,
     },
     body: {
-      fontSize: 16,
+      ...Typography.body,
       color: theme.text,
     },
     sectionTitle: {
-      fontSize: 18,
+      ...Typography.sectionTitle,
       fontWeight: '700',
       color: theme.text,
     },

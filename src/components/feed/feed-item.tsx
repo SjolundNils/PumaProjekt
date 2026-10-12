@@ -15,6 +15,8 @@
 import { InviteButtons } from '@/components/groups/invite-buttons';
 import { RateButton } from '@/components/rating/rate-button';
 import { ThemedText } from '@/components/themed-text';
+import { ComponentSize, Radius, Spacing, Typography } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import type { FeedEvent } from '@/lib/feed';
 import { router } from 'expo-router';
 import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
@@ -44,6 +46,8 @@ type EventMetadata = {
 };
 
 export function FeedItem({ event, currentUserId, myRating }: Props) {
+  const theme = useTheme();
+  const styles = createStyles(theme);
   const text = describeEvent(event);
   if (!text) return null;
 
@@ -196,12 +200,27 @@ function formatRelativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB');
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
-  avatar: { width: 40, height: 40, borderRadius: 20 },
-  avatarPlaceholder: { backgroundColor: '#ccc' },
-  body: { flex: 1, gap: 2 },
-  subtitle: { fontSize: 14, opacity: 0.8 },
-  time: { fontSize: 12, opacity: 0.5 },
-  cover: { width: 52, height: 52, borderRadius: 4 },
-});
+function createStyles(theme: ReturnType<typeof useTheme>) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.twoAndHalf,
+      paddingVertical: Spacing.twoAndHalf,
+    },
+    avatar: {
+      width: ComponentSize.avatar,
+      height: ComponentSize.avatar,
+      borderRadius: Radius.large,
+    },
+    avatarPlaceholder: { backgroundColor: theme.backgroundElement },
+    body: { flex: 1, gap: Spacing.half },
+    subtitle: { ...Typography.bodySmall, opacity: 0.8 },
+    time: { ...Typography.caption, opacity: 0.5 },
+    cover: {
+      width: ComponentSize.cover,
+      height: ComponentSize.cover,
+      borderRadius: Radius.small,
+    },
+  });
+}

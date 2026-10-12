@@ -76,10 +76,46 @@ export const Spacing = {
   half: 2,
   one: 4,
   two: 8,
+  twoAndHalf: 12,
   three: 16,
   four: 24,
   five: 32,
   six: 64,
+} as const;
+
+export const Typography = {
+  caption: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  bodySmall: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  body: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  pageTitle: {
+    fontSize: 32,
+    lineHeight: 38,
+  },
+} as const;
+
+export const Radius = {
+  small: 4,
+  medium: 12,
+  large: 20,
+  pill: 999,
+} as const;
+
+export const ComponentSize = {
+  avatar: 40,
+  cover: 52,
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
