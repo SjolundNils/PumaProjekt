@@ -1,12 +1,12 @@
-import { useTheme } from '@/hooks/use-theme';
 import type { AppTheme } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 type Size = 'small' | 'medium' | 'large';
-type Color = 'base' | 'indigo' | 'orange';
+type Color = 'base' | 'indigo' | 'orange' | 'destructiveSecondary';
 
 type Props = {
   label: string;
@@ -16,6 +16,7 @@ type Props = {
   color?: Color;
   accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
+  disabled?: boolean;
 };
 
 export function ActionButton({
@@ -26,6 +27,7 @@ export function ActionButton({
   color = 'indigo',
   accessibilityLabel,
   style,
+  disabled = false,
 }: Props) {
   const theme = useTheme();
   const sizing = sizeStyles[size];
@@ -36,13 +38,16 @@ export function ActionButton({
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityRole="button"
       onPress={onPress}
+      disabled={disabled}
       style={({ pressed }) => [
         styles.button,
         sizing.button,
         style,
         {
           backgroundColor: colors.background,
-          opacity: pressed ? 0.7 : 1,
+          borderColor: colors.border,
+          borderWidth: colors.border ? 1 : undefined,
+          opacity: disabled ? 0.5 : pressed ? 0.7 : 1,
         },
       ]}
     >
@@ -67,6 +72,7 @@ const styles = StyleSheet.create({
 const colorStyles: Record<Color, (theme: AppTheme) => {
   background: string;
   foreground: string;
+  border?: string;
 }> = {
   base: (theme) => ({
     background: theme.backgroundElement,
@@ -79,6 +85,11 @@ const colorStyles: Record<Color, (theme: AppTheme) => {
   orange: (theme) => ({
     background: theme.accentOrange,
     foreground: theme.accentText,
+  }),
+  destructiveSecondary: (theme) => ({
+    background: theme.destructiveBackground,
+    foreground: theme.destructiveText,
+    border: theme.destructiveBorder,
   }),
 };
 

@@ -1,5 +1,8 @@
+import { ActionButton } from '@/components/ui/action-button';
+import { BackButton } from '@/components/ui/back-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useTheme } from '@/hooks/use-theme';
 import {
     acceptRequest,
     Friendship,
@@ -9,6 +12,8 @@ import {
     searchUsers,
     sendFriendRequest,
 } from '@/lib/friends';
+import { createFriendsStyles } from '@/styles/friends';
+import { createTextStyles } from '@/styles/text';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -25,9 +30,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const ACCENT = '#5B4DF5';
-
 export default function AddFriendsScreen() {
+  const theme = useTheme();
+  const styles = createAddFriendsStyles(theme);
+  const textStyles = createTextStyles(theme);
+  const friendsStyles = createFriendsStyles(theme);
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<ProfileHit[]>([]);
   const [searched, setSearched] = useState(false);
@@ -100,10 +107,12 @@ export default function AddFriendsScreen() {
             : 'Accept';
 
     return (
-      <ProfileRow name={profile.display_name} avatar={profile.avatar_url}>
+      <ProfileRow name={profile.display_name} avatar={profile.avatar_url} styles={friendsStyles} textStyles={textStyles}>
         {profile.relation === 'none' && (
-          <SmallButton
+          <ActionButton
             label={actionLabel}
+            size="small"
+            color="indigo"
             disabled={busyId === profile.id}
             onPress={() => handleRequestAction(profile.id, () => sendFriendRequest(profile.id))}
           />
@@ -117,19 +126,17 @@ export default function AddFriendsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={22} color="#000" />
-        </Pressable>
+    <SafeAreaView style={styles.safeArea}>
+      <BackButton onPress={() => router.back()} />
 
-        <Text style={styles.title}>Add friends</Text>
-        <Text style={styles.subtitle}>Search for likeminded</Text>
+      <Text style={[textStyles.pageTitle, styles.title]}>Add friends</Text>
+      <Text style={textStyles.pageSubtitle}>Search for likeminded</Text>
 
         <View style={styles.searchRow}>
           <View style={styles.searchField}>
-            <Ionicons name="search" size={20} color="#000" />
+            <Ionicons name="search" size={20} color={theme.text} />
             <TextInput
-              style={styles.input}
+              style={[styles.input, textStyles.body]}
               value={query}
               onChangeText={(text) => {
                 setQuery(text);
@@ -146,12 +153,12 @@ export default function AddFriendsScreen() {
             />
           </View>
           <Pressable style={styles.searchButton} onPress={handleSearch} disabled={searching}>
-            {searching ? <ActivityIndicator color="#fff" /> : <Ionicons name="arrow-forward" size={20} color="#fff" />}
+            {searching ? <ActivityIndicator color={theme.accentText} /> : <Ionicons name="arrow-forward" size={20} color={theme.accentText} />}
           </Pressable>
         </View>
 
         {searched && hits.length === 0 && (
-          <Text style={styles.empty}>No users found.</Text>
+          <Text style={[textStyles.secondary, styles.empty]}>No users found.</Text>
         )}
         {hits.map((profile) => (
           <View key={profile.id}>{renderProfile(profile)}</View>
@@ -161,21 +168,25 @@ export default function AddFriendsScreen() {
           data={incoming}
           keyExtractor={(item) => `incoming-${item.friendship_id}`}
           ListHeaderComponent={
-            <Text style={styles.section}>
+            <Text style={[textStyles.sectionTitle, styles.section]}>
               Pending requests from others
             </Text>
           }
-          ListEmptyComponent={!loading ? <Text style={styles.empty}>None.</Text> : null}
+          ListEmptyComponent={!loading ? <Text style={[textStyles.secondary, styles.empty]}>None.</Text> : null}
           renderItem={({ item }) => (
-            <ProfileRow name={item.display_name} avatar={item.avatar_url}>
+            <ProfileRow name={item.display_name} avatar={item.avatar_url} styles={friendsStyles} textStyles={textStyles}>
               <View style={styles.actions}>
-                <SmallButton
+                <ActionButton
                   label="Accept"
+                  size="small"
+                  color="indigo"
                   disabled={busyId === item.friendship_id}
                   onPress={() => handleRequestAction(item.friendship_id, () => acceptRequest(item.friendship_id))}
                 />
-                <SmallButton
+                <ActionButton
                   label="Decline"
+                  size="small"
+                  color="destructiveSecondary"
                   disabled={busyId === item.friendship_id}
                   onPress={() => handleRequestAction(item.friendship_id, () => removeFriendship(item.friendship_id))}
                 />
@@ -184,16 +195,18 @@ export default function AddFriendsScreen() {
           )}
           ListFooterComponent={
             <View>
-              <Text style={styles.section}>
+              <Text style={[textStyles.sectionTitle, styles.section]}>
                 Pending requests from you
               </Text>
               {outgoing.length === 0 ? (
-                <Text style={styles.empty}>None.</Text>
+                <Text style={[textStyles.secondary, styles.empty]}>None.</Text>
               ) : (
                 outgoing.map((item) => (
-                  <ProfileRow key={item.friendship_id} name={item.display_name} avatar={item.avatar_url}>
-                    <SmallButton
+                  <ProfileRow key={item.friendship_id} name={item.display_name} avatar={item.avatar_url} styles={friendsStyles} textStyles={textStyles}>
+                    <ActionButton
                       label="Cancel"
+                      size="small"
+                      color="destructiveSecondary"
                       disabled={busyId === item.friendship_id}
                       onPress={() => handleRequestAction(item.friendship_id, () => removeFriendship(item.friendship_id))}
                     />
@@ -213,54 +226,29 @@ function ProfileRow({
   name,
   avatar,
   children,
+  styles,
+  textStyles,
 }: {
   name: string | null;
   avatar: string | null;
   children: React.ReactNode;
+  styles: ReturnType<typeof createFriendsStyles>;
+  textStyles: ReturnType<typeof createTextStyles>;
 }) {
   return (
     <View style={styles.row}>
       {avatar ? <Image source={{ uri: avatar }} style={styles.avatar} /> : <View style={[styles.avatar, styles.avatarEmpty]} />}
-      <Text style={styles.name} numberOfLines={1}>{name ?? 'Unknown'}</Text>
+      <Text style={[styles.name, textStyles.body]} numberOfLines={1}>{name ?? 'Unknown'}</Text>
       {children}
     </View>
   );
 }
 
-function SmallButton({
-  label,
-  onPress,
-  disabled,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <Pressable style={[styles.smallButton, disabled && styles.disabled]} onPress={onPress} disabled={disabled}>
-      <Text style={styles.smallButtonText}>{label}</Text>
-    </Pressable>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+function createAddFriendsStyles(theme: ReturnType<typeof useTheme>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
   safeArea: { flex: 1, paddingHorizontal: 16 },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  title: { fontSize: 32, fontWeight: '800', color: '#000', marginTop: 16 },
-  subtitle: { fontSize: 16, color: '#999', marginTop: 2 },
+  title: { marginTop: 16 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 24, marginBottom: 12 },
   searchField: {
     flex: 1,
@@ -268,33 +256,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     height: 48,
-    backgroundColor: '#fff',
+    backgroundColor: theme.background,
     borderRadius: 24,
     paddingHorizontal: 16,
-    shadowColor: '#000',
+    shadowColor: theme.text,
     shadowOpacity: 0.1,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
-  input: { flex: 1, fontSize: 16, color: '#000' },
+  input: { flex: 1 },
   searchButton: {
     width: 48,
     height: 48,
-    backgroundColor: ACCENT,
+    backgroundColor: theme.accentIndigo,
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  empty: { color: '#888', paddingVertical: 12 },
-  section: { fontSize: 18, fontWeight: '700', marginTop: 20, marginBottom: 8 },
+  empty: { paddingVertical: 12 },
+  section: { marginTop: 20, marginBottom: 8 },
   listContent: { paddingBottom: 32 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
   avatar: { width: 44, height: 44, borderRadius: 22 },
-  avatarEmpty: { backgroundColor: '#ddd' },
-  name: { flex: 1, fontSize: 16, color: '#000' },
   actions: { flexDirection: 'row', gap: 6 },
-  smallButton: { backgroundColor: ACCENT, borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
-  smallButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-  disabled: { opacity: 0.5 },
-});
+  });
+}
