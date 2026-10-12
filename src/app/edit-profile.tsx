@@ -91,6 +91,7 @@ export default function EditProfileScreen() {
   const [biography, setBiography] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [updatingAvatar, setUpdatingAvatar] = useState(false);
 
   /**
    * Hämtar profilen och favoritalbumen för den inloggade användaren.
@@ -141,6 +142,38 @@ export default function EditProfileScreen() {
       setSpotifyProfile({ user_name: data.display_name, image_url: data.image_url });
     } catch (error) {
       handleSpotifyError(error, 'Kunde inte hämta Spotify-profilen');
+    }
+  }
+
+    /**
+   * Hämtar användarens nuvarande profilbild från Spotify och sparar den i
+   * databasen, så att den syns för alla: på profilen, för andra och i
+   * flödet. Används när användaren har bytt bild på Spotify efter sin
+   * första inloggning.
+   */
+  async function updateAvatarFromSpotify() {
+    setUpdatingAvatar(true);
+    try {
+      const spotifyData = await getMySpotifyProfile();
+
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: spotifyData.image_url })
+        .eq('id', userData.user.id);
+      if (error) throw error;
+
+      // Visar den nya bilden direkt på sidan.
+      setProfile((current) =>
+        current ? { ...current, avatar_url: spotifyData.image_url } : current
+      );
+      Alert.alert('Updated', 'Your profile picture has been updated from Spotify.');
+    } catch (error) {
+      handleSpotifyError(error, 'Could not update profile picture');
+    } finally {
+      setUpdatingAvatar(false);
     }
   }
 
@@ -323,11 +356,20 @@ export default function EditProfileScreen() {
       <SafeAreaView style={styles.screen} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
 
-          <View style={styles.profileImageContainer}>
-            {spotifyProfile?.image_url && (
-              <Image source={{ uri: spotifyProfile.image_url }} style={styles.avatar} />
-            )}
-          </View>
+        <View style={styles.profileImageContainer}>
+          {profile.avatar_url && (
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+          )}
+          <Pressable
+            style={[styles.avatarButton, updatingAvatar && styles.avatarButtonDisabled]}
+            onPress={updateAvatarFromSpotify}
+            disabled={updatingAvatar}
+          >
+            <ThemedText style={styles.avatarButtonText}>
+              {updatingAvatar ? 'Updating...' : 'Update picture from Spotify'}
+            </ThemedText>
+          </Pressable>
+        </View>
 
           <ThemedText style={styles.label}>Visningsnamn</ThemedText>
           <ThemedTextInput
@@ -406,7 +448,7 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
+  screen: { flex: 1, },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content: { padding: 16, gap: 8 },
   title: { fontSize: 24, fontWeight: '700', marginBottom: 8 },
@@ -431,6 +473,16 @@ const styles = StyleSheet.create({
   songCover: {width: 50, height: 50, borderRadius: 4},
   songName: {fontSize: 15, fontWeight: '600'},
   songArtist: {fontSize: 13, color: '#666'},
+
+    avatarButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999, // Fullt rundade kortsidor ger pillformen
+    borderWidth: 1,
+    borderColor: 'rgba(128, 128, 128, 0.5)',
+  },
+  avatarButtonDisabled: { opacity: 0.5 },
+  avatarButtonText: { fontSize: 14, fontWeight: '600' },
 
   removeButton: {
     position: 'absolute',
