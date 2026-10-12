@@ -17,21 +17,22 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    useColorScheme,
-    View,
+	ActivityIndicator,
+	Alert,
+	Image,
+	Pressable,
+	ScrollView,
+	StyleSheet,
+	TextInput,
+	useColorScheme,
+	View,
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { getErrorMessage } from '@/lib/errors';
+import { syncPlaylists } from '@/lib/spotifyPlaylists';
 import { supabase } from '@/lib/supabase';
 
 /** Max antal tecken i gruppnamnet. */
@@ -119,11 +120,26 @@ export default function CreateGroupScreen() {
     setCreating(true);
     setErrorMessage(null);
     try {
-      const { error } = await supabase.rpc('create_group', {
+      const { data: groupId, error } = await supabase.rpc('create_group', {
         group_name: name,
         invitee_ids: selected.map((friend) => friend.id),
       });
       if (error) throw error;
+
+      // Skapar spellistan i Spotify. Gruppen är redan skapad, så ett fel här
+      // ska inte stoppa något. Spellistan skapas då vid nästa synk (nattjobbet
+      // skapar spellistor för grupper som saknar en).
+      const sync = groupId ? await syncPlaylists(groupId) : null;
+      const playlistOk = !!sync && sync.results.length > 0 && sync.results.every((r) => r.ok);
+
+      if (!playlistOk) {
+        Alert.alert(
+          'Group created',
+          'The Spotify playlist could not be created right now. It will be created automatically later.',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+        return;
+      }
 
       router.back();
     } catch (error) {
