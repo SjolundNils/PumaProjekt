@@ -17,24 +17,24 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-	ActivityIndicator,
-	Alert,
-	Image,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	TextInput,
-	useColorScheme,
-	View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  useColorScheme,
+  View,
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { getErrorMessage } from '@/lib/errors';
+import { pickGroupImage, uploadGroupAvatar, type GroupImage } from '@/lib/group-avatar';
 import { syncPlaylists } from '@/lib/spotifyPlaylists';
 import { supabase } from '@/lib/supabase';
-
 /** Max antal tecken i gruppnamnet. */
 const MAX_NAME_LENGTH = 40;
 
@@ -55,6 +55,8 @@ export default function CreateGroupScreen() {
   const [loadingFriends, setLoadingFriends] = useState(true);
   const [creating, setCreating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [coverImage, setCoverImage] = useState<GroupImage | null>(null);
 
   useEffect(() => {
     loadFriends();
@@ -82,6 +84,8 @@ export default function CreateGroupScreen() {
         .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
 
       if (error) throw error;
+
+      
 
       const list = data
         .map((row) => (row.requester?.id === userId ? row.addressee : row.requester))
@@ -125,12 +129,30 @@ export default function CreateGroupScreen() {
         invitee_ids: selected.map((friend) => friend.id),
       });
       if (error) throw error;
+            // Laddar upp gruppbilden. Gruppen är redan skapad, så ett fel här ska
+      // inte stoppa resten. Gruppen får då ingen bild, men fungerar ändå.
+        if (groupId && coverImage) {
+          try {
+            await uploadGroupAvatar(groupId, coverImage);
+          } catch (imageError) {
+            console.log('Kunde inte ladda upp gruppbilden:', imageError);
+          }
+        }
 
       // Skapar spellistan i Spotify. Gruppen är redan skapad, så ett fel här
       // ska inte stoppa något. Spellistan skapas då vid nästa synk (nattjobbet
       // skapar spellistor för grupper som saknar en).
       const sync = groupId ? await syncPlaylists(groupId) : null;
       const playlistOk = !!sync && sync.results.length > 0 && sync.results.every((r) => r.ok);
+            // Sätter gruppbilden som omslag på spellistan i Spotify. Det kräver
+      // att spellistan finns, så det görs bara om den skapades. Ett fel här
+      // ska inte stoppa något, eftersom gruppen och bilden i appen redan finns.
+      if (playlistOk && coverImage && groupId) {
+        const { error: coverError } = await supabase.functions.invoke('set-playlist-cover', {
+          body: { groupId },
+        });
+        if (coverError) console.log('Kunde inte sätta omslaget i Spotify:', coverError);
+      }
 
       if (!playlistOk) {
         Alert.alert(
@@ -158,13 +180,24 @@ export default function CreateGroupScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Gruppbild. Platshållare tills funktionen för bilder byggs. */}
+        {/* Gruppbild. Tryck för att välja eller byta bild. */}
         <Pressable
-          style={[styles.avatar, { borderColor: colors.text }]}
-          onPress={() => Alert.alert('Coming soon', 'Group pictures are not available yet.')}
+          style={[styles.avatar, { borderColor: colors.text }, coverImage && styles.avatarSelected]}
+          onPress={async () => {
+            try {
+              const image = await pickGroupImage();
+              if (image) setCoverImage(image);
+            } catch (pickError) {
+              Alert.alert('Could not use the picture', getErrorMessage(pickError));
+            }
+          }}
           accessibilityLabel="Choose group picture"
         >
-          <Ionicons name="camera-outline" size={32} color={colors.text} />
+          {coverImage ? (
+            <Image source={{ uri: coverImage.uri }} style={styles.avatarImage} />
+          ) : (
+            <Ionicons name="camera-outline" size={32} color={colors.text} />
+          )}
         </Pressable>
 
         <ThemedText style={styles.label}>Name</ThemedText>
@@ -277,4 +310,6 @@ const styles = StyleSheet.create({
   button: { backgroundColor: '#1DB954', paddingVertical: 14, borderRadius: 999, alignItems: 'center', marginTop: 16 },
   buttonDisabled: { opacity: 0.4 },
   buttonText: { color: '#fff', fontWeight: '600' },
+  avatarSelected: { borderWidth: 0, opacity: 1 },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 48 },
 });
