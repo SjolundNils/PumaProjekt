@@ -16,6 +16,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { useTheme } from '@/hooks/use-theme';
+
 type Props = {
   /** Aktuellt betyg, 0 betyder inget betyg. */
   value: number;
@@ -29,12 +31,15 @@ type Props = {
 
 const STARS = [1, 2, 3, 4, 5];
 
-export function StarRating({ value, onChange, size = 40, color = '#FFC107' }: Props) {
+export function StarRating({ value, onChange, size = 40, color }: Props) {
+  const theme = useTheme();
+  const starColor = color ?? theme.accentOrange;
+
   return (
     <View style={styles.row}>
       {STARS.map((star) => (
         <View key={star} style={{ width: size, height: size }}>
-          <Ionicons name={iconFor(star, value)} size={size} color={color} />
+          <Ionicons name={iconFor(star, value)} size={size} color={starColor} />
 
           {/* Osynliga tryckytor ovanpå stjärnan, en per halva. */}
           {onChange && (

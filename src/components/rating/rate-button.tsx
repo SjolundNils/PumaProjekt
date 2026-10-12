@@ -12,11 +12,10 @@
  *   <RateButton dailySongId={song.id} myRating={myRatings[song.id]} />
  */
 
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet } from 'react-native';
 
+import { ActionButton } from '@/components/ui/action-button';
 import { StarRating } from '@/components/rating/star-rating';
-import { ThemedText } from '@/components/themed-text';
 import { openRatingSheet } from '@/lib/ratings';
 
 type Props = {
@@ -41,31 +40,19 @@ export function RateButton({ dailySongId, myRating }: Props) {
   }
 
   return (
-    <Pressable
-      style={styles.pill}
+    <ActionButton
+      label="Rate"
+      icon="star-outline"
+      size="small"
+      color="orange"
       onPress={() => openRatingSheet(dailySongId)}
-      hitSlop={6}
       accessibilityLabel="Rate this song"
-    >
-      <Ionicons name="star-outline" size={14} color="#FFC107" />
-      <ThemedText style={styles.pillText}>Rate</ThemedText>
-    </Pressable>
+      style={styles.pill}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   stars: { alignSelf: 'flex-start', marginTop: 4 },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start', // Pillen blir bara så bred som innehållet
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    marginTop: 4,
-    borderRadius: 999, // Fullt rundade kortsidor ger pillformen
-    borderWidth: 1,
-    borderColor: '#FFC107',
-  },
-  pillText: { fontSize: 13, fontWeight: '600', color: '#FFC107' },
+  pill: { alignSelf: 'flex-start', marginTop: 4 },
 });

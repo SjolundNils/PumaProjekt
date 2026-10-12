@@ -46,7 +46,7 @@ export function ActionButton({
         {
           backgroundColor: colors.background,
           borderColor: colors.border,
-          borderWidth: colors.border ? 1 : undefined,
+          borderWidth: colors.border ? 1 : 0,
           opacity: disabled ? 0.5 : pressed ? 0.7 : 1,
         },
       ]}
@@ -83,8 +83,9 @@ const colorStyles: Record<Color, (theme: AppTheme) => {
     foreground: theme.accentText,
   }),
   orange: (theme) => ({
-    background: theme.accentOrange,
-    foreground: theme.accentText,
+    background: theme.accentOrangeButtonBackground,
+    foreground: theme.accentOrangeButtonText,
+    border: theme.accentOrangeButtonBorder,
   }),
   destructiveSecondary: (theme) => ({
     background: theme.destructiveBackground,
