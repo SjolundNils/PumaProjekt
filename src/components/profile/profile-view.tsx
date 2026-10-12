@@ -18,7 +18,7 @@
  * uppdatera.
  */
 
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -35,6 +35,7 @@ import { AlbumGrid } from '@/components/profile/album-grid';
 import { RateButton } from '@/components/rating/rate-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { ActionButton } from '@/components/ui/action-button';
 import { getErrorMessage } from '@/lib/errors';
 import { fetchProfile, type ProfileData } from '@/lib/profile';
 import { fetchMyRatings } from '@/lib/ratings';
@@ -130,21 +131,35 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
           ) : (
             <View style={[styles.avatar, styles.placeholder]} />
           )}
-          <ThemedText type="title" style={styles.name}>
-            {profile.display_name ?? 'Unknown'}
-          </ThemedText>
+          <View style={styles.profileActions}>
+            <View style={styles.nameBox}>
+              <ThemedText type="subtitle" style={styles.name} numberOfLines={1}>
+                {profile.display_name ?? 'Unknown'}
+              </ThemedText>
+            </View>
+            <ActionButton
+              label="Friends"
+              size="medium"
+              color="base"
+              onPress={() => router.push('/friends')}
+            />
+          </View>
           {profile.biography && <ThemedText style={styles.bio}>{profile.biography}</ThemedText>}
 
           {onEditPress && (
-            <Pressable style={styles.editButton} onPress={onEditPress}>
-              <ThemedText style={styles.editButtonText}>Edit profile</ThemedText>
-            </Pressable>
+            <ActionButton
+              label="Edit profile"
+              onPress={onEditPress}
+              size="medium"
+              color="indigo"
+              style={styles.editButton}
+            />
           )}
         </View>
 
         {errorMessage && <ThemedText style={styles.error}>{errorMessage}</ThemedText>}
 
-        <ThemedText type="subtitle">Today's song</ThemedText>
+        <ThemedText type="default">Today's song</ThemedText>
         {todaysSong ? (
           <Pressable
             style={styles.songRow}
@@ -171,7 +186,7 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
           </ThemedText>
         )}
 
-        <ThemedText type="subtitle">Favorite albums</ThemedText>
+        <ThemedText type="default">Favorite albums</ThemedText>
         {albums.length === 0 && !isOwn ? (
           <ThemedText style={styles.dim}>No favorite albums yet.</ThemedText>
         ) : (
@@ -179,7 +194,7 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
         )}
 
        {isOwn && recentSongs.length > 0 && (
-          <ThemedText type="subtitle">Recent songs</ThemedText>
+          <ThemedText type="default">Recent songs</ThemedText>
         )}
         {isOwn && recentSongs.map((song) => (
           <View key={`${song.id}-${song.played_at}`} style={styles.songRow}>
@@ -202,20 +217,19 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   content: { padding: 16, gap: 16 },
-  header: { alignItems: 'center', gap: 8, marginBottom: 8 },
+  header: { gap: 8, marginBottom: 8 },
   avatar: { width: 96, height: 96, borderRadius: 48 },
   placeholder: { backgroundColor: 'rgba(128, 128, 128, 0.3)' },
-  name: { textAlign: 'center' },
-  bio: { textAlign: 'center', opacity: 0.8 },
-  editButton: {
-    marginTop: 4,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.5)',
+  profileActions: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  editButtonText: { fontWeight: '600' },
+  nameBox: { width: '50%', maxWidth: '50%' },
+  name: {},
+  bio: {opacity: 0.8 },
+  editButton: { alignSelf: 'flex-start', marginTop: 4 },
   songRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   songCover: { width: 64, height: 64, borderRadius: 6 },
   songText: { flex: 1, gap: 2 },
