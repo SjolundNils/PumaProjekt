@@ -12,6 +12,7 @@
  * låttiteln (se components/rating/rate-button.tsx).
  */
 
+import { InviteButtons } from '@/components/groups/invite-buttons';
 import { RateButton } from '@/components/rating/rate-button';
 import { ThemedText } from '@/components/themed-text';
 import type { FeedEvent } from '@/lib/feed';
@@ -110,6 +111,11 @@ export function FeedItem({ event, currentUserId, myRating }: Props) {
 
         {/* Egen tryckyta inuti raden: öppnar betygsrutan istället för Spotify. */}
         {showRating && song && <RateButton dailySongId={song.id} myRating={myRating} />}
+
+        {/* Inbjudan till en grupp: Join/Decline direkt i flödet. */}
+        {event.type === 'group_invite_received' && event.group?.id && (
+          <InviteButtons groupId={event.group.id} />
+        )}
 
         <ThemedText style={styles.time}>{formatRelativeTime(event.created_at)}</ThemedText>
       </View>
