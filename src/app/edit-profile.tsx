@@ -75,7 +75,7 @@ function handleSpotifyError(error: unknown, title: string) {
     router.replace('/login');
     return;
   }
-  Alert.alert(title, error instanceof Error ? error.message : 'Okänt fel');
+  Alert.alert(title, error instanceof Error ? error.message : 'Unknown error');
 }
 
 export default function EditProfileScreen() {
@@ -102,7 +102,7 @@ export default function EditProfileScreen() {
       // Hämtar den inloggade användaren från Supabase-sessionen.
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData.user) {
-        Alert.alert('Inte inloggad', 'Logga in för att se din profil.');
+        Alert.alert('Not logged in', 'Log in to view your profile.');
         return;
       }
       const userId = userData.user.id;
@@ -129,8 +129,8 @@ export default function EditProfileScreen() {
       setBiography(profileResult.data.biography ?? '');
       setAlbums(albumsResult.data);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Okänt fel';
-      Alert.alert('Kunde inte hämta profilen', message);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      Alert.alert('Could not fetch profile', message);
     } finally {
       setLoading(false);
     }
@@ -276,10 +276,10 @@ export default function EditProfileScreen() {
         if (upsertError) throw upsertError;
       }
 
-      Alert.alert('Sparat', 'Profilen och favoritalbum har uppdaterats.');
+      Alert.alert('Saved', 'The profile and favorite albums have been updated.');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Okänt fel';
-      Alert.alert('Kunde inte spara', message);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      Alert.alert('Could not save', message);
     } finally {
       setSaving(false);
     }
@@ -371,14 +371,14 @@ export default function EditProfileScreen() {
             </ThemedText>
           </Pressable>
         </View>
-          <ThemedText style={styles.label}>Visningsnamn</ThemedText>
+          <ThemedText style={styles.label}>Display Name</ThemedText>
           <ThemedTextInput
             value={displayName}
             onChangeText={setDisplayName}
             placeholder="Ditt namn"
           />
 
-          <ThemedText style={styles.label}>Biografi</ThemedText>
+          <ThemedText style={styles.label}>Biography</ThemedText>
           <ThemedTextInput
             style={[styles.multiline]}
             value={biography}
@@ -391,17 +391,17 @@ export default function EditProfileScreen() {
             style={[styles.button, { backgroundColor: '#c0392b' }]}
             onPress={async () => {
               await signOut();
-              Alert.alert('Utloggad', 'Du är nu utloggad.');
+              Alert.alert('Logged out', 'You are now logged out.');
             }}
           >
-            <ThemedText style={styles.buttonText}>Logga ut</ThemedText>
+            <ThemedText style={styles.buttonText}>Log out</ThemedText>
           </Pressable>
 
           <Pressable style={styles.button} onPress={handleSave} disabled={saving}>
-            <ThemedText style={styles.buttonText}>{saving ? 'Sparar...' : 'Spara'}</ThemedText>
+            <ThemedText style={styles.buttonText}>{saving ? 'Saving...' : 'Save changes'}</ThemedText>
           </Pressable>
 
-          <ThemedText style={styles.sectionTitle}>Favoritalbum</ThemedText>
+          <ThemedText style={styles.sectionTitle}>Favorite albums</ThemedText>
           <View style={styles.grid}>
             {slots.map((album, index) => (
               <View key={index} style={styles.slot}>
@@ -430,7 +430,7 @@ export default function EditProfileScreen() {
                 </View>
               
                 <ThemedText style={styles.albumName} numberOfLines={1}>
-                  {album?.album_name ?? 'Tom plats'}
+                  {album?.album_name ?? 'Empty slot'}
                 </ThemedText>
                 {album && (
                   <ThemedText style={styles.albumArtist} numberOfLines={1}>
