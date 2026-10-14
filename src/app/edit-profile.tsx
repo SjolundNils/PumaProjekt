@@ -360,6 +360,7 @@ export default function EditProfileScreen() {
           {profile.avatar_url && (
             <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
           )}
+          <ThemedText style={styles.spotifyNameLabel}>{spotifyProfile?.user_name ? '@' + spotifyProfile.user_name : 'Inget namn angivet'}</ThemedText>
           <Pressable
             style={[styles.avatarButton, updatingAvatar && styles.avatarButtonDisabled]}
             onPress={updateAvatarFromSpotify}
@@ -370,14 +371,12 @@ export default function EditProfileScreen() {
             </ThemedText>
           </Pressable>
         </View>
-
           <ThemedText style={styles.label}>Visningsnamn</ThemedText>
           <ThemedTextInput
             value={displayName}
             onChangeText={setDisplayName}
             placeholder="Ditt namn"
           />
-          <ThemedText style={styles.label}>{spotifyProfile?.user_name ? '@' + spotifyProfile.user_name : 'Inget namn angivet'}</ThemedText>
 
           <ThemedText style={styles.label}>Biografi</ThemedText>
           <ThemedTextInput
@@ -454,6 +453,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '700', marginBottom: 8 },
   avatar: { width: 80, height: 80, borderRadius: 40, marginBottom: 8 },
   label: { fontSize: 14, fontWeight: '600', marginTop: 8 },
+  spotifyNameLabel: { fontSize: 14, fontWeight: '600', marginTop: 0, marginBottom: 8 },
   input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
   multiline: { minHeight: 80, textAlignVertical: 'top' },
   button: { backgroundColor: '#1DB954', borderRadius: 8, paddingVertical: 12, alignItems: 'center', marginTop: 8 },
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 20, color: '#999' },
   albumName: { fontSize: 13, fontWeight: '600', marginTop: 4 },
   albumArtist: { fontSize: 12, color: '#666' },
-  profileImageContainer: { width: '100%', alignItems: 'center', marginTop: 8, marginBottom: 8 },
+  profileImageContainer: { width: '100%', alignItems: 'center', marginTop: 8, marginBottom: 4 },
 
   // Senaste låtar
   songRow: {flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8},
