@@ -12,6 +12,10 @@
  * in. Alla andra skickas till /login, och inloggade användare som hamnar på
  * /login skickas vidare till startsidan.
  */
+import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { DailySongProvider } from '@/lib/daily-song-context';
+import { onSessionStatusChange, refreshSessionStatus, SessionStatus } from '@/lib/session';
+import { supabase } from '@/lib/supabase';
 import {
   DarkTheme,
   DefaultTheme,
@@ -24,10 +28,6 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, useColorScheme, View } from 'react-native';
-
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { onSessionStatusChange, refreshSessionStatus, SessionStatus } from '@/lib/session';
-import { supabase } from '@/lib/supabase';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -74,6 +74,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
+      <DailySongProvider>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="login" />
@@ -107,6 +108,7 @@ export default function RootLayout() {
             options={{ headerShown: true, title: 'Edit profile', headerBackTitle: 'Back' }}
         />
       </Stack>
+      </DailySongProvider>
 
       {/* Döljer appen tills läget är kontrollerat, så att inget flimrar förbi. */}
       {status === 'loading' && (

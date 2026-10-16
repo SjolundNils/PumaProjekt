@@ -11,15 +11,17 @@
  * Ikonerna är Apples SF Symbols (attributet sf), som följer systemets stil
  * och färger automatiskt.
  */
+import { Colors } from '@/constants/theme';
+import { useDailySong } from '@/lib/daily-song-context';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useColorScheme } from 'react-native';
-
-import { Colors } from '@/constants/theme';
 
 export default function AppTabs() {
   // Väljer färgschema efter telefonens ljusa eller mörka läge.
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const { hasChosenToday } = useDailySong();
+
 
   return (
     <NativeTabs
@@ -42,7 +44,7 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon sf="person.crop.circle.fill" />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="add-song" role="search">
+      <NativeTabs.Trigger name="add-song" role="search" hidden={hasChosenToday===true}>
         <NativeTabs.Trigger.Label>Dagens låt</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="plus" />
       </NativeTabs.Trigger>

@@ -14,7 +14,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
-
+import { useDailySong } from '@/lib/daily-song-context';
 import { getErrorMessage } from '@/lib/errors';
 import { getRecentlyPlayed } from '@/lib/spotifyData';
 import { syncPlaylists } from '@/lib/spotifyPlaylists';
@@ -25,16 +25,16 @@ import { GlassContainer, GlassView, isLiquidGlassAvailable } from 'expo-glass-ef
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-	ActivityIndicator,
-	Alert,
-	FlatList,
-	Image,
-	KeyboardAvoidingView,
-	Platform,
-	Pressable,
-	StyleSheet,
-	TextInput,
-	View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -77,6 +77,7 @@ export default function AddSongScreen() {
   const [loadingRecent, setLoadingRecent] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { refresh: refreshDailySong } = useDailySong();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   
@@ -151,6 +152,7 @@ export default function AddSongScreen() {
         throw new Error("You've already picked today's song.");
       }
       if (error) throw error;
+       await refreshDailySong();
 
       // Lägger låten i spellistorna för alla grupper användaren är med i.
       // Misslyckas synken ska valet ändå gälla: syncPlaylists kastar inte, och
