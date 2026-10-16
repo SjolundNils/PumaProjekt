@@ -12,10 +12,16 @@ import { acceptInvite, declineInvite, getInviteState } from '@/lib/groupInvites'
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
 
-type Props = { groupId: string };
+type Props = {
+  groupId: string;
+  /** Anropas efter att användaren gått med. */
+  onAccepted?: () => void;
+  /** Anropas efter att användaren tackat nej. */
+  onDeclined?: () => void;
+};
 type State = 'loading' | 'pending' | 'member' | 'declined' | 'none';
 
-export function InviteButtons({ groupId }: Props) {
+export function InviteButtons({ groupId, onAccepted, onDeclined }: Props) {
   const [state, setState] = useState<State>('loading');
   const [busy, setBusy] = useState(false);
 
@@ -35,9 +41,11 @@ export function InviteButtons({ groupId }: Props) {
       if (action === 'accept') {
         await acceptInvite(groupId);
         setState('member');
+		onAccepted?.();
       } else {
         await declineInvite(groupId);
         setState('declined');
+		onDeclined?.();
       }
     } catch (error) {
       Alert.alert('Something went wrong', error instanceof Error ? error.message : 'Unknown error');
