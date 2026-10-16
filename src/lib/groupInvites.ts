@@ -44,3 +44,22 @@ export async function getInviteState(groupId: string): Promise<InviteState> {
   if (error) throw error;
   return (data ?? 'none') as InviteState;
 }
+
+export type InvitePreview = {
+  group: { name: string; avatar_url: string | null };
+  members: { user_id: string; display_name: string | null; avatar_url: string | null }[];
+  songs: {
+    id: number;
+    user_id: string;
+    track_name: string;
+    artist_name: string;
+    image_url: string | null;
+  }[];
+};
+
+/** Förhandsvisning av en grupp jag är inbjuden till. Ger fel om ingen inbjudan finns. */
+export async function getInvitePreview(groupId: string): Promise<InvitePreview> {
+  const { data, error } = await supabase.rpc('group_invite_preview', { p_group_id: groupId });
+  if (error) throw error;
+  return data as unknown as InvitePreview;
+}
