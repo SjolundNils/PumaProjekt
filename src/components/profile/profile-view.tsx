@@ -54,7 +54,7 @@ type Props = {
 
 export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 0 }: Props) {
   const [data, setData] = useState<ProfileData | null>(null);
-  
+
   const [myRating, setMyRating] = useState<number | undefined>(undefined);
   const [recentSongs, setRecentSongs] = useState<RecentTrack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,12 +137,16 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
                 {profile.display_name ?? 'Unknown'}
               </ThemedText>
             </View>
-            <ActionButton
-              label="Friends"
-              size="medium"
-              color="base"
-              onPress={() => router.push('/friends')}
-            />
+
+            {isOwn && (
+              <ActionButton
+                label="Friends"
+                size="medium"
+                color="base"
+                onPress={() => router.push('/friends')}
+              />
+            )}
+
           </View>
           {profile.biography && <ThemedText style={styles.bio}>{profile.biography}</ThemedText>}
 
@@ -193,7 +197,7 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
           <AlbumGrid albums={albums} />
         )}
 
-       {isOwn && recentSongs.length > 0 && (
+        {isOwn && recentSongs.length > 0 && (
           <ThemedText type="default">Recent songs</ThemedText>
         )}
         {isOwn && recentSongs.map((song) => (
@@ -201,7 +205,7 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
             {song.image_url && (
               <Image source={{ uri: song.image_url }} style={styles.songCover} />
             )}
-        
+
             <View>
               <ThemedText style={styles.songName}>{song.name}</ThemedText>
               <ThemedText style={styles.dim}>{song.artist_name}</ThemedText>
@@ -228,7 +232,7 @@ const styles = StyleSheet.create({
   },
   nameBox: { width: '50%', maxWidth: '50%' },
   name: {},
-  bio: {opacity: 0.8 },
+  bio: { opacity: 0.8 },
   editButton: { alignSelf: 'flex-start', marginTop: 4 },
   songRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   songCover: { width: 64, height: 64, borderRadius: 6 },
