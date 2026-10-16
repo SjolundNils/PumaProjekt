@@ -11,7 +11,7 @@ export const Colors = {
   light: {
     text: '#000000',
     background: '#ffffff',
-    backgroundElement: '#F0F0F3',
+    backgroundElement: '#F6F6F6',
     backgroundSelected: '#E0E1E6',
     textSecondary: '#60646C',
 
@@ -81,6 +81,7 @@ export const Spacing = {
   four: 24,
   five: 32,
   six: 64,
+  seven: 128,
 } as const;
 
 export const Typography = {
@@ -103,6 +104,7 @@ export const Typography = {
   pageTitle: {
     fontSize: 32,
     lineHeight: 38,
+    fontWeight: '700',
   },
 } as const;
 

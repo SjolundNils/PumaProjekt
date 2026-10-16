@@ -6,11 +6,11 @@ export function createTextStyles(theme: AppTheme) {
   return StyleSheet.create({
     pageTitle: {
       ...Typography.pageTitle,
-      fontWeight: '800',
       color: theme.text,
     },
     pageSubtitle: {
       ...Typography.body,
+      lineHeight: 20,
       color: theme.textSecondary,
       marginTop: 2,
     },

@@ -19,17 +19,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FeedItem } from '@/components/feed/feed-item';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset } from '@/constants/theme';
+import { BottomTabInset, Spacing, Typography } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { getErrorMessage } from '@/lib/errors';
-import { supabase } from '@/lib/supabase';
-
-
 import { fetchFeed, type FeedEvent } from '@/lib/feed';
 import { fetchMyRatings } from '@/lib/ratings';
+import { supabase } from '@/lib/supabase';
+import { createTextStyles } from '@/styles/text';
 
 export default function FeedScreen() {
+  const theme = useTheme();
+  const textStyles = createTextStyles(theme);
+  const styles = createFeedStyles(theme);
   const [events, setEvents] = useState<FeedEvent[]>([]);
-  const [testRating, setTestRating] = useState(0);
   // Sant vid första laddningen, då visas en laddningsindikator mitt på skärmen.
   const [loading, setLoading] = useState(true);
 
@@ -104,7 +106,12 @@ export default function FeedScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           ListHeaderComponent={
             <View style={styles.header}>
-              <ThemedText type="title">Flow</ThemedText>
+              <View style={styles.titleGroup}>
+                <ThemedText style={textStyles.pageTitle}>Niche to meet you</ThemedText>
+                <ThemedText style={[textStyles.pageSubtitle, styles.subtitle]}>
+                  We’re sure todays track will be the most indie one yet
+                </ThemedText>
+              </View>
 
               {/* TEST: tillfälliga länkar till testskärmarna. Tas bort senare. */}
               <ScrollView
@@ -113,21 +120,23 @@ export default function FeedScreen() {
                 contentContainerStyle={styles.testLinks}
               >
                 <Link href="/groups-test">
-                  <ThemedText type="link">Groupstest</ThemedText>
+                  <ThemedText themeColor="accentIndigo" type="link">Groupstest</ThemedText>
                 </Link>
                 <Link href="/create-group">
-                  <ThemedText type="link">Create group</ThemedText>
+                  <ThemedText themeColor="accentIndigo" type="link">Create group</ThemedText>
                 </Link>
 
               </ScrollView>
 
 
-              {errorMessage && <ThemedText style={styles.error}>{errorMessage}</ThemedText>}
+              {errorMessage && (
+                <ThemedText style={[textStyles.secondary, styles.error]}>{errorMessage}</ThemedText>
+              )}
             </View>
           }
           ListEmptyComponent={
             !errorMessage ? (
-              <ThemedText style={styles.empty}>
+              <ThemedText style={[textStyles.secondary, styles.empty]}>
                 Inget har hänt än. När dina vänner väljer dagens låt dyker den upp här.
               </ThemedText>
             ) : null
@@ -138,12 +147,28 @@ export default function FeedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list: { paddingHorizontal: 16, paddingBottom: BottomTabInset + 16 },
-  header: { gap: 12, paddingTop: 8, paddingBottom: 8 },
-  testLinks: { flexDirection: 'row', gap: 16 },
-  error: { color: '#c0392b' },
-  empty: { textAlign: 'center', opacity: 0.6, marginTop: 48 },
-});
+function createFeedStyles(theme: ReturnType<typeof useTheme>) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.background },
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    list: {
+      paddingHorizontal: Spacing.three,
+      paddingBottom: BottomTabInset + Spacing.three,
+    },
+    header: {
+      gap: Spacing.twoAndHalf,
+      paddingTop: Spacing.seven,
+      paddingBottom: Spacing.two,
+    },
+    titleGroup: { gap: Spacing.half },
+    subtitle: { maxWidth: '60%' },
+    testLinks: { flexDirection: 'row', gap: Spacing.four },
+    error: { color: theme.destructiveText },
+    empty: {
+      ...Typography.body,
+      textAlign: 'center',
+      opacity: 0.6,
+      marginTop: Spacing.six - Spacing.two,
+    },
+  });
+}

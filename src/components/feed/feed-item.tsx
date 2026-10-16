@@ -213,7 +213,10 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: Spacing.twoAndHalf,
-      paddingVertical: Spacing.twoAndHalf,
+      padding: Spacing.three,
+      marginBottom: Spacing.two,
+      backgroundColor: theme.backgroundElement,
+      borderRadius: Radius.medium,
     },
     avatar: {
       width: ComponentSize.avatar,
