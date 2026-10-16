@@ -104,7 +104,7 @@ export default function FeedScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           ListHeaderComponent={
             <View style={styles.header}>
-              <ThemedText type="title">Flöde</ThemedText>
+              <ThemedText type="title">Flow</ThemedText>
 
               {/* TEST: tillfälliga länkar till testskärmarna. Tas bort senare. */}
               <ScrollView
@@ -112,25 +112,15 @@ export default function FeedScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.testLinks}
               >
-                <Link href="/login">
-                  <ThemedText type="link">Inloggning</ThemedText>
-                </Link>
-                <Link href="/search-test">
-                  <ThemedText type="link">Söktest</ThemedText>
-                </Link>
                 <Link href="/groups-test">
                   <ThemedText type="link">Groupstest</ThemedText>
                 </Link>
-                <Link href="/friends-test">
-                  <ThemedText type="link">Friendstest</ThemedText>
+                <Link href="/create-group">
+                  <ThemedText type="link">Create group</ThemedText>
                 </Link>
-                <Link href="/rate/85">
-                  <ThemedText type="link">Rate test</ThemedText>
-                </Link>
+
               </ScrollView>
-              <Link href="/create-group">
-                <ThemedText type="link">Create group</ThemedText>
-              </Link>
+
 
               {errorMessage && <ThemedText style={styles.error}>{errorMessage}</ThemedText>}
             </View>
