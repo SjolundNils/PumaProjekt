@@ -15,6 +15,7 @@
 
 import { todayInSweden } from '@/lib/dates';
 import { supabase } from '@/lib/supabase';
+import { router } from 'expo-router';
 
 /** Antal platser för favoritalbum. Motsvarar check-regeln i databasen. */
 export const ALBUM_SLOTS = 6;
@@ -105,4 +106,13 @@ export function toAlbumSlots(albums: FavoriteAlbum[]): (FavoriteAlbum | null)[] 
     { length: ALBUM_SLOTS },
     (_, index) => albums.find((album) => album.position === index + 1) ?? null
   );
+}
+
+/**
+ * Öppnar en användares profil.
+ *
+ * @param userId Användarens id (samma som i profiles och auth.users).
+ */
+export function openUserProfile(userId: string): void {
+  router.push({ pathname: '/user/[userId]', params: { userId } });
 }

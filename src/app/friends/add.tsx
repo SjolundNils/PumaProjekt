@@ -1,32 +1,33 @@
-import { ActionButton } from '@/components/ui/action-button';
-import { BackButton } from '@/components/ui/back-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { ActionButton } from '@/components/ui/action-button';
+import { BackButton } from '@/components/ui/back-button';
 import { useTheme } from '@/hooks/use-theme';
 import {
-    acceptRequest,
-    Friendship,
-    listFriendships,
-    ProfileHit,
-    removeFriendship,
-    searchUsers,
-    sendFriendRequest,
+  acceptRequest,
+  Friendship,
+  listFriendships,
+  ProfileHit,
+  removeFriendship,
+  searchUsers,
+  sendFriendRequest,
 } from '@/lib/friends';
+import { openUserProfile } from '@/lib/profile';
 import { createFriendsStyles } from '@/styles/friends';
 import { createTextStyles } from '@/styles/text';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -107,7 +108,7 @@ export default function AddFriendsScreen() {
             : 'Accept';
 
     return (
-      <ProfileRow name={profile.display_name} avatar={profile.avatar_url} styles={friendsStyles} textStyles={textStyles}>
+      <ProfileRow name={profile.display_name} avatar={profile.avatar_url} styles={friendsStyles} textStyles={textStyles}   onPress={() => openUserProfile(profile.id)}>
         {profile.relation === 'none' && (
           <ActionButton
             label={actionLabel}
@@ -174,7 +175,7 @@ export default function AddFriendsScreen() {
           }
           ListEmptyComponent={!loading ? <Text style={[textStyles.secondary, styles.empty]}>None.</Text> : null}
           renderItem={({ item }) => (
-            <ProfileRow name={item.display_name} avatar={item.avatar_url} styles={friendsStyles} textStyles={textStyles}>
+            <ProfileRow name={item.display_name} avatar={item.avatar_url} styles={friendsStyles} textStyles={textStyles} onPress={() => openUserProfile(item.friend_id)}>
               <View style={styles.actions}>
                 <ActionButton
                   label="Accept"
@@ -202,7 +203,7 @@ export default function AddFriendsScreen() {
                 <Text style={[textStyles.secondary, styles.empty]}>None.</Text>
               ) : (
                 outgoing.map((item) => (
-                  <ProfileRow key={item.friendship_id} name={item.display_name} avatar={item.avatar_url} styles={friendsStyles} textStyles={textStyles}>
+                  <ProfileRow key={item.friendship_id} name={item.display_name} avatar={item.avatar_url} styles={friendsStyles} textStyles={textStyles} onPress={() => openUserProfile(item.friend_id)}>
                     <ActionButton
                       label="Cancel"
                       size="small"
@@ -228,19 +229,22 @@ function ProfileRow({
   children,
   styles,
   textStyles,
+  onPress,
 }: {
   name: string | null;
   avatar: string | null;
   children: React.ReactNode;
   styles: ReturnType<typeof createFriendsStyles>;
   textStyles: ReturnType<typeof createTextStyles>;
+  /** Anropas när raden trycks. Utan den går raden inte att trycka på. */
+  onPress?: () => void;
 }) {
   return (
-    <View style={styles.row}>
+    <Pressable style={styles.row} onPress={onPress} disabled={!onPress}>
       {avatar ? <Image source={{ uri: avatar }} style={styles.avatar} /> : <View style={[styles.avatar, styles.avatarEmpty]} />}
       <Text style={[styles.name, textStyles.body]} numberOfLines={1}>{name ?? 'Unknown'}</Text>
       {children}
-    </View>
+    </Pressable>
   );
 }
 

@@ -7,10 +7,11 @@
  * Datan kommer från lib/friends.ts. Sökningen här filtrerar bara listan jag
  * redan har hämtat. Sökning bland alla användare görs på add-sidan.
  */
-import { useTheme } from '@/hooks/use-theme';
 import { ActionButton } from '@/components/ui/action-button';
 import { BackButton } from '@/components/ui/back-button';
+import { useTheme } from '@/hooks/use-theme';
 import { Friendship, getFriends, removeFriendship } from '@/lib/friends';
+import { openUserProfile } from '@/lib/profile';
 import { createFriendsStyles } from '@/styles/friends';
 import { createTextStyles } from '@/styles/text';
 import { Ionicons } from '@expo/vector-icons';
@@ -170,7 +171,12 @@ export default function FriendsScreen() {
             />
           }
           renderItem={({ item }) => (
-            <View style={styles.row}>
+            <Pressable
+              style={styles.row}
+              onPress={() => openUserProfile(item.friend_id)}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${item.display_name ?? 'profile'}`}
+            >
               {item.avatar_url ? (
                 <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
               ) : (
@@ -179,10 +185,11 @@ export default function FriendsScreen() {
               <Text style={[styles.name, textStyles.body]} numberOfLines={1}>
                 {item.display_name ?? 'Unknown'}
               </Text>
+              {/* Egen tryckyta inuti raden: öppnar menyn istället för profilen. */}
               <Pressable style={styles.menuButton} onPress={() => openMenu(item)} hitSlop={8}>
                 <Ionicons name="ellipsis-horizontal" size={16} color={theme.text} />
               </Pressable>
-            </View>
+            </Pressable>
           )}
           ListEmptyComponent={
             <View style={styles.center}>
