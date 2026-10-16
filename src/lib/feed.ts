@@ -57,7 +57,7 @@ export async function fetchFeed(before?: string) {
       read_at,
       actor:profiles!activity_events_actor_id_fkey ( id, display_name, avatar_url ),
       song:daily_songs ( id, track_name, artist_name, image_url, spotify_track_id, song_date ),
-      group:groups ( id, name )
+      group:groups ( id, name, avatar_url )
     `)
     .in('delivery', ['feed', 'both'])
     .in('type', SUPPORTED_TYPES)
