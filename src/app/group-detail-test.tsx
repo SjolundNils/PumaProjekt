@@ -192,6 +192,27 @@ export default function GroupDetailTestScreen() {
                             </View>
                         ))}
                     </View>
+                    {/*Knapp för att lägga till personer i gruppen */}
+                    <Pressable
+                        onPress={() =>
+                            router.push({
+                                pathname: '/group-members-test',
+                                params: { id },
+                            })
+                        }
+                        style={{
+                            backgroundColor: '#F3F0FF',
+                            paddingHorizontal: 12,
+                            paddingVertical: 6,
+                            borderRadius: 16,
+                            alignSelf: 'flex-start',
+                            marginTop: 10,
+                        }}
+                    >
+                        <Text style={{ color: '#6955FF', fontSize: 13 }}>
+                            + Add people
+                        </Text>
+                    </Pressable>
 
                     {/* Visar gruppmedlemmarnas dagens låtar */}
                     <Text style={{ fontSize: 18, fontWeight: 'bold', marginTop: 24 }}>
