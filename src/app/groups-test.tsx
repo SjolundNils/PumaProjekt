@@ -134,7 +134,13 @@ export default function GroupsTestScreen() {
               {invites.map((invite) => {
                 const busy = busyGroupId === invite.group_id;
                 return (
-                  <View key={invite.group_id} style={styles.groupRow}>
+                  <Pressable
+                    key={invite.group_id}
+                    style={styles.groupRow}
+                    onPress={() =>
+                      router.push({ pathname: '/group-detail-test', params: { id: invite.group_id } })
+                    }
+                  >
                     {invite.avatar_url ? (
                       <Image source={{ uri: invite.avatar_url }} style={styles.groupImage} />
                     ) : (
@@ -162,7 +168,7 @@ export default function GroupsTestScreen() {
                         </Pressable>
                       </View>
                     </View>
-                  </View>
+                  </Pressable>
                 );
               })}
             </>

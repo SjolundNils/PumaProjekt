@@ -1,8 +1,10 @@
+import { InviteButtons } from '@/components/groups/invite-buttons';
+import { getInvitePreview, getInviteState, InviteState } from '@/lib/groupInvites';
 import { fetchAverageRatings, fetchMyRatings } from '@/lib/ratings';
 import { supabase } from '@/lib/supabase';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native';
 
 type GroupMember = {
     user_id: string;
@@ -36,6 +38,42 @@ export default function GroupDetailTestScreen() {
     const [myRatings, setMyRatings] = useState<Record<number, number>>({});
     // Genomsnittsbetygen för låtarna
     const [averageRatings, setAverageRatings] = useState<Record<number, number>>({});
+	// 'loading' tills vi vet om jag är medlem, inbjuden eller inget av det
+    const [inviteState, setInviteState] = useState<'loading' | InviteState>('loading');
+
+	useEffect(() => {
+        if (!id) return;
+        let mounted = true;
+
+        async function loadAccess() {
+            try {
+                const state = await getInviteState(id);
+                if (!mounted) return;
+
+                if (state === 'pending') {
+                    const preview = await getInvitePreview(id);
+                    if (!mounted) return;
+                    setGroup(preview.group);
+                    setMembers(
+                        preview.members.map((m) => ({
+                            user_id: m.user_id,
+                            profiles: { avatar_url: m.avatar_url, display_name: m.display_name },
+                        }))
+                    );
+                    setDailySongs(preview.songs);
+                }
+                setInviteState(state);
+            } catch (error) {
+                console.log('Kunde inte kontrollera åtkomst:', error);
+                if (mounted) setInviteState('none');
+            }
+        }
+
+        loadAccess();
+        return () => {
+            mounted = false;
+        };
+    }, [id]);
 
     useEffect(() => {
         // Hämtar ID för den inloggade användaren
@@ -49,7 +87,7 @@ export default function GroupDetailTestScreen() {
 
     useEffect(() => {
         async function loadGroup() {
-            if (!id) return;
+            if (!id || inviteState !== 'member') return;
 
             // Hämtar information om den valda gruppen från Supabase
             const { data, error } = await supabase
@@ -68,11 +106,11 @@ export default function GroupDetailTestScreen() {
         }
 
         loadGroup();
-    }, [id]);
+    }, [id, inviteState]);
 
     useEffect(() => {
         async function loadMembers() {
-            if (!id) return;
+            if (!id || inviteState !== 'member') return;
 
             // Hämtar medlemmarna och deras profilbilder från Supabase
             const { data, error } = await supabase
@@ -90,15 +128,18 @@ export default function GroupDetailTestScreen() {
         }
 
         loadMembers();
-    }, [id]);
+    }, [id, inviteState]);
 
     useEffect(() => {
         async function loadDailySongs() {
-            // Vänta tills gruppmedlemmarna har hämtats
-            if (members.length === 0) return;
+            if (inviteState !== 'member' || members.length === 0) return;
 
-            // Hämtar dagens datum
-            const today = new Date().toISOString().split('T')[0];
+            // Dagens datum från databasen (dagen byter 04:00 svensk tid)
+            const { data: today, error: dateError } = await supabase.rpc('app_today');
+            if (dateError || !today) {
+                console.log('Kunde inte hämta dagens datum:', dateError);
+                return;
+            }
 
             // Hämtar användarnas ID
             const userIds = members.map((member) => member.user_id);
@@ -120,12 +161,14 @@ export default function GroupDetailTestScreen() {
         }
 
         loadDailySongs();
-    }, [members]);
+    }, [members, inviteState]);
 
     // Hämtar betyg när gruppsidan visas eller låtarna ändras
     useFocusEffect(
         useCallback(() => {
             async function loadRatings() {
+				if (inviteState !== 'member') return;
+
                 const songIds = dailySongs.map((song) => song.id);
 
                 if (songIds.length === 0) {
@@ -149,8 +192,24 @@ export default function GroupDetailTestScreen() {
             }
 
             loadRatings();
-        }, [dailySongs])
+        }, [dailySongs, inviteState])
     );
+
+	if (inviteState === 'loading') {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+                <ActivityIndicator />
+            </View>
+        );
+    }
+
+    if (inviteState === 'none') {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+                <Text>You don't have access to this group.</Text>
+            </View>
+        );
+    }
 
     return (
         <View style={{ flex: 1, padding: 20, backgroundColor: '#fff' }}>
@@ -192,6 +251,18 @@ export default function GroupDetailTestScreen() {
                             </View>
                         ))}
                     </View>
+
+					{/* Inbjuden: visar Join/Decline enligt designen */}
+                    {inviteState === 'pending' && id && (
+                        <View style={{ marginTop: 16 }}>
+                            <Text>You've been invited</Text>
+                            <InviteButtons
+                                groupId={id}
+                                onAccepted={() => setInviteState('member')}
+                                onDeclined={() => router.back()}
+                            />
+                        </View>
+                    )}
 
                     {/* Visar gruppmedlemmarnas dagens låtar */}
                     <Text style={{ fontSize: 18, fontWeight: 'bold', marginTop: 24 }}>
@@ -243,7 +314,7 @@ export default function GroupDetailTestScreen() {
                                 )}
 
                                 {/* Rate-knappen visas inte på den egna låten */}
-                                {currentUserId && song.user_id !== currentUserId && (
+                                {currentUserId && song.user_id !== currentUserId && inviteState === 'member' && (
                                     <Pressable
                                         onPress={() => router.push(`/rate/${song.id}`)}
                                         style={{
