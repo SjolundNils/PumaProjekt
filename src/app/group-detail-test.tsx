@@ -167,7 +167,8 @@ export default function GroupDetailTestScreen() {
     useFocusEffect(
         useCallback(() => {
             async function loadRatings() {
-				if (inviteState !== 'member') return;
+                
+				if (inviteState !== 'member' || !id) return;
 
                 const songIds = dailySongs.map((song) => song.id);
 
@@ -181,7 +182,7 @@ export default function GroupDetailTestScreen() {
                     // Hämtar både mina betyg och genomsnittsbetygen
                     const [mine, averages] = await Promise.all([
                         fetchMyRatings(songIds),
-                        fetchAverageRatings(songIds),
+                        fetchAverageRatings(id, songIds),
                     ]);
 
                     setMyRatings(mine);
@@ -192,7 +193,7 @@ export default function GroupDetailTestScreen() {
             }
 
             loadRatings();
-        }, [dailySongs, inviteState])
+        }, [dailySongs, inviteState, id])
     );
 
 	if (inviteState === 'loading') {

@@ -47,43 +47,35 @@ export async function fetchMyRatings(dailySongIds: number[]): Promise<Record<num
   return Object.fromEntries(data.map((row) => [row.daily_song_id, row.rating]));
 }
 
-  /**
- * Hämtar genomsnittsbetyget för en lista med dagens låtar.
+/**
+ * Hämtar snittbetyget för en lista med låtar, räknat bara utifrån betyg
+ * från medlemmar i en viss grupp. Samma låt kan därför ha olika snitt i
+ * olika grupper.
  *
- * @param dailySongIds ID:n för låtarna i daily_songs.
- * @returns Ett objekt med låtens id och dess genomsnittsbetyg.
+ * Snittet räknas ut i databasen (group_average_ratings), eftersom appen
+ * inte kan se vilka som är med i en grupp.
+ *
+ * @param groupId      Gruppen vars medlemmars betyg ska räknas.
+ * @param dailySongIds Id:n för raderna i daily_songs.
+ * @returns            Ett objekt där nyckeln är låtens id och värdet
+ *                     snittbetyget. Låtar utan betyg från gruppen finns
+ *                     inte med.
+ * @throws             Om Supabase returnerar ett fel.
  */
 export async function fetchAverageRatings(
+  groupId: string,
   dailySongIds: number[]
 ): Promise<Record<number, number>> {
   if (dailySongIds.length === 0) return {};
 
-  const { data, error } = await supabase
-    .from('song_ratings')
-    .select('daily_song_id, rating')
-    .in('daily_song_id', dailySongIds);
+  const { data, error } = await supabase.rpc('group_average_ratings', {
+    p_group_id: groupId,
+    p_song_ids: dailySongIds,
+  });
 
   if (error) throw error;
 
-  const averages: Record<number, number> = {};
-
-  for (const songId of dailySongIds) {
-    // Hittar alla betyg för den här låten
-    const songRatings = data.filter(
-      (row) => row.daily_song_id === songId
-    );
-
-    if (songRatings.length === 0) continue;
-
-    // Räknar ut genomsnittet
-    const total = songRatings.reduce(
-      (sum, row) => sum + row.rating,
-      0
-    );
-
-    averages[songId] = total / songRatings.length;
-  }
-
-  return averages;
-
+  return Object.fromEntries(
+    (data ?? []).map((row) => [row.daily_song_id, Number(row.average)])
+  );
 }
