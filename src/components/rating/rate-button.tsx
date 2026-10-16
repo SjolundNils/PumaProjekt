@@ -12,10 +12,10 @@
  *   <RateButton dailySongId={song.id} myRating={myRatings[song.id]} />
  */
 
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ActionButton } from '@/components/ui/action-button';
 import { StarRating } from '@/components/rating/star-rating';
+import { ActionButton } from '@/components/ui/action-button';
 import { openRatingSheet } from '@/lib/ratings';
 
 type Props = {
@@ -23,9 +23,23 @@ type Props = {
   dailySongId: number;
   /** Användarens eget betyg på låten, om hen har betygsatt den. */
   myRating?: number;
+    /**
+   * Om betyget går att ändra. Sätts till false för låtar som inte är
+   * dagens, eftersom bara dagens låt kan betygsättas. Då visas stjärnorna
+   * utan att gå att trycka på, eller ingenting om låten saknar betyg.
+   */
+  editable?: boolean;
 };
 
-export function RateButton({ dailySongId, myRating }: Props) {
+export function RateButton({ dailySongId, myRating, editable = true }: Props) {
+  if (!editable) {
+    return myRating ? (
+      <View style={styles.stars}>
+        <StarRating value={myRating} size={16} />
+      </View>
+    ) : null;
+  }
+
   if (myRating) {
     return (
       <Pressable

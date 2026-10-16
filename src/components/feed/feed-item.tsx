@@ -17,6 +17,7 @@ import { RateButton } from '@/components/rating/rate-button';
 import { ThemedText } from '@/components/themed-text';
 import { ComponentSize, Radius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { todayInSweden } from '@/lib/dates';
 import type { FeedEvent } from '@/lib/feed';
 import { router } from 'expo-router';
 import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
@@ -114,7 +115,13 @@ export function FeedItem({ event, currentUserId, myRating }: Props) {
         )}
 
         {/* Egen tryckyta inuti raden: öppnar betygsrutan istället för Spotify. */}
-        {showRating && song && <RateButton dailySongId={song.id} myRating={myRating} />}
+          {showRating && song && (
+          <RateButton
+            dailySongId={song.id}
+            myRating={myRating}
+            editable={song.song_date === todayInSweden()}
+          />
+        )}
 
         {/* Inbjudan till en grupp: Join/Decline direkt i flödet. */}
         {event.type === 'group_invite_received' && event.group?.id && (

@@ -156,7 +156,7 @@ export default function RateScreen() {
       ) : (
         !errorMessage && (
           <ThemedText style={styles.dim}>
-            You can only rate songs picked by your friends and group members.
+            You can only rate today's songs picked by your friends and group members.
           </ThemedText>
         )
       )}
