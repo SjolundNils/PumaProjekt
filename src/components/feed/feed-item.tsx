@@ -19,6 +19,7 @@ import { ComponentSize, Radius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { todayInSweden } from '@/lib/dates';
 import type { FeedEvent } from '@/lib/feed';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
 
@@ -46,12 +47,15 @@ type EventMetadata = {
   image_url?: string;
 };
 
+type FeedCardKind = 'user-to-track' | 'user-to-group' | 'group-to-track' | 'friend-request';
+
 export function FeedItem({ event, currentUserId, myRating }: Props) {
   const theme = useTheme();
   const styles = createStyles(theme);
   const text = describeEvent(event);
   if (!text) return null;
 
+  const cardKind = getCardKind(event);
   const song = event.song;
   const metadata = (event.metadata ?? {}) as EventMetadata;
 
@@ -63,13 +67,6 @@ export function FeedItem({ event, currentUserId, myRating }: Props) {
     ? `https://open.spotify.com/track/${song.spotify_track_id}`
     : metadata.spotify_album_id
       ? `https://open.spotify.com/album/${metadata.spotify_album_id}`
-      : null;
-
-  // Undertext: låten, eller albumet för favoritalbum.
-  const subtitle = song
-    ? `${song.track_name} · ${song.artist_name}`
-    : metadata.album_name
-      ? `${metadata.album_name} · ${metadata.artist_name ?? ''}`
       : null;
 
   // Betygsknappen visas på valda låtar, men inte på användarens egna.
@@ -92,30 +89,67 @@ export function FeedItem({ event, currentUserId, myRating }: Props) {
       onPress={() => spotifyUrl && Linking.openURL(spotifyUrl)}
       disabled={!spotifyUrl}
     >
-      {/* Egen tryckyta: öppnar aktörens profil istället för Spotify. */}
-      <Pressable
-        onPress={openProfile}
-        disabled={!event.actor}
-        hitSlop={6}
-        accessibilityLabel={`Open ${event.actor?.display_name ?? 'profile'}`}
-      >
-        {event.actor?.avatar_url ? (
-          <Image source={{ uri: event.actor.avatar_url }} style={styles.avatar} />
+      <View style={styles.header}>
+        {cardKind === 'group-to-track' ? (
+          event.group?.avatar_url ? (
+            <Image source={{ uri: event.group.avatar_url }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.groupPlaceholder]}>
+              <Ionicons name="people" size={18} color={theme.accentIndigo} />
+            </View>
+          )
         ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]} />
+          /* Egen tryckyta: öppnar aktörens profil istället för Spotify. */
+          <Pressable
+            onPress={openProfile}
+            disabled={!event.actor}
+            hitSlop={6}
+            accessibilityLabel={`Open ${event.actor?.display_name ?? 'profile'}`}
+          >
+            {event.actor?.avatar_url ? (
+              <Image source={{ uri: event.actor.avatar_url }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarPlaceholder]} />
+            )}
+          </Pressable>
         )}
+        <ThemedText style={styles.eventText} numberOfLines={2}>{text}</ThemedText>
+      </View>
 
-      </Pressable>
-      <View style={styles.body}>
-        <ThemedText>{text}</ThemedText>
-        {subtitle && (
-          <ThemedText style={styles.subtitle} numberOfLines={1}>
-            {subtitle}
-          </ThemedText>
-        )}
+      {cardKind === 'user-to-group' && event.group && (
+        <View style={styles.contentCard}>
+          {event.group.avatar_url ? (
+            <Image source={{ uri: event.group.avatar_url }} style={styles.groupIcon} />
+          ) : (
+            <View style={styles.groupIcon}>
+              <Ionicons name="people" size={22} color={theme.accentIndigo} />
+            </View>
+          )}
+          <View style={styles.contentText}>
+            <ThemedText numberOfLines={1}>{event.group.name}</ThemedText>
+            <ThemedText themeColor="textSecondary" style={Typography.bodySmall}>
+              Group
+            </ThemedText>
+          </View>
+        </View>
+      )}
+      {(cardKind === 'user-to-track' || cardKind === 'group-to-track') && (song || metadata.album_name) && (
+        <View style={styles.contentCard}>
+          {coverUrl && <Image source={{ uri: coverUrl }} style={styles.cover} />}
+          <View style={styles.contentText}>
+            <ThemedText numberOfLines={1}>
+              {song?.track_name ?? metadata.album_name}
+            </ThemedText>
+            <ThemedText themeColor="textSecondary" style={Typography.bodySmall} numberOfLines={1}>
+              {song?.artist_name ?? metadata.artist_name}
+            </ThemedText>
+          </View>
+        </View>
+      )}
 
+      <View style={styles.footer}>
         {/* Egen tryckyta inuti raden: öppnar betygsrutan istället för Spotify. */}
-          {showRating && song && (
+        {showRating && song && (
           <RateButton
             dailySongId={song.id}
             myRating={myRating}
@@ -130,10 +164,25 @@ export function FeedItem({ event, currentUserId, myRating }: Props) {
 
         <ThemedText style={styles.time}>{formatRelativeTime(event.created_at)}</ThemedText>
       </View>
-
-      {coverUrl && <Image source={{ uri: coverUrl }} style={styles.cover} />}
     </Pressable>
   );
+}
+
+function getCardKind(event: FeedEvent): FeedCardKind {
+  switch (event.type) {
+    case 'group_all_rated':
+    case 'group_playlist_complete':
+      return 'group-to-track';
+    case 'member_joined_group':
+    case 'joined_via_your_link':
+    case 'group_invite_received':
+      return 'user-to-group';
+    case 'friend_request_received':
+    case 'friend_request_accepted':
+      return 'friend-request';
+    default:
+      return 'user-to-track';
+  }
 }
 
 /**
@@ -210,23 +259,54 @@ function formatRelativeTime(iso: string): string {
 function createStyles(theme: ReturnType<typeof useTheme>) {
   return StyleSheet.create({
     row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: Spacing.twoAndHalf,
+      position: 'relative',
+      gap: Spacing.two,
       padding: Spacing.three,
-      marginBottom: Spacing.two,
+      paddingVertical: Spacing.two,
+      marginBottom: Spacing.three,
       backgroundColor: theme.backgroundElement,
       borderRadius: Radius.medium,
     },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.two,
+    },
     avatar: {
-      width: ComponentSize.avatar,
-      height: ComponentSize.avatar,
+      width: ComponentSize.avatar.small,
+      height: ComponentSize.avatar.small,
       borderRadius: Radius.large,
     },
     avatarPlaceholder: { backgroundColor: theme.backgroundElement },
-    body: { flex: 1, gap: Spacing.half },
-    subtitle: { ...Typography.bodySmall, opacity: 0.8 },
-    time: { ...Typography.caption, opacity: 0.5 },
+    groupPlaceholder: {
+      backgroundColor: theme.backgroundSelected,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    eventText: { flex: 1 },
+    footer: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: Spacing.two,
+    },
+    time: { ...Typography.caption, opacity: 0.5, marginLeft: 'auto' },
+    contentCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.two,
+      padding: Spacing.two,
+      backgroundColor: theme.background,
+      borderRadius: Radius.medium,
+    },
+    contentText: { flex: 1 },
+    groupIcon: {
+      width: ComponentSize.cover,
+      height: ComponentSize.cover,
+      borderRadius: Radius.small,
+      backgroundColor: theme.backgroundSelected,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     cover: {
       width: ComponentSize.cover,
       height: ComponentSize.cover,

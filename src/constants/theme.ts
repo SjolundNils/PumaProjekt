@@ -116,7 +116,10 @@ export const Radius = {
 } as const;
 
 export const ComponentSize = {
-  avatar: 40,
+  avatar: {
+    default: 40,
+    small: 20,
+  },
   cover: 52,
 } as const;
 
