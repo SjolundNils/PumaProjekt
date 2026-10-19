@@ -126,11 +126,12 @@ export default function FeedScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.testLinks}
               >
-                <Link href="/groups-test">
-                  <ThemedText themeColor="accentIndigo" type="link">Groupstest</ThemedText>
-                </Link>
+
                 <Link href="/create-group">
                   <ThemedText themeColor="accentIndigo" type="link">Create group</ThemedText>
+                </Link>
+                <Link href={{ pathname: '/edit-group/[groupId]', params: { groupId: 'ab88b65d-eff3-4275-9b4c-44cc1490d647' } } }>
+                  <ThemedText type="link">Edit group (bara nils kan ändra)</ThemedText>
                 </Link>
 
               </ScrollView>

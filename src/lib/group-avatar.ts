@@ -90,7 +90,10 @@ export async function uploadGroupAvatar(groupId: string, image: GroupImage): Pro
   const userId = sessionData.session?.user.id;
   if (!userId) throw new Error('You need to be signed in to upload a picture.');
 
-  const path = `${userId}/${groupId}.jpg`;
+  // Tidsstämpeln gör filnamnet unikt, så att en ny bild aldrig behöver
+  // skriva över en gammal fil. Den nya adressen gör också att den nya
+  // bilden visas direkt, istället för en gammal som sparats i minnet.
+  const path = `${userId}/${groupId}-${Date.now()}.jpg`;
 
   const { error: uploadError } = await supabase.storage
     .from(BUCKET)

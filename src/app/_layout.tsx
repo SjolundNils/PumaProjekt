@@ -107,6 +107,12 @@ export default function RootLayout() {
             name="edit-profile"
             options={{ headerShown: true, title: 'Edit profile', headerBackTitle: 'Back' }}
         />
+
+        <Stack.Screen
+          name="edit-group/[groupId]"
+          options={{ headerShown: true, title: 'Edit group', headerBackTitle: 'Back' }}
+        />
+
       </Stack>
       </DailySongProvider>
 
