@@ -33,6 +33,7 @@ import {
 } from 'react-native';
 
 import { AlbumGrid } from '@/components/profile/album-grid';
+import { FriendStatus } from '@/components/profile/friend-status';
 import { RateButton } from '@/components/rating/rate-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -161,13 +162,15 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
               </ThemedText>
             </View>
 
-            {isOwn && (
+            {isOwn ? (
               <ActionButton
                 label="Friends"
                 size="medium"
                 color="base"
                 onPress={() => router.push('/friends')}
               />
+            ) : (
+              <FriendStatus userId={userId} />
             )}
 
           </View>
