@@ -115,7 +115,7 @@ export default function GroupsScreen() {
                   key={group.id}
                   style={styles.groupRow}
                   onPress={() =>
-                    router.push({ pathname: '/group-detail-test', params: { id: group.id } })
+                  router.push({ pathname: '/group/[id]', params: { id: group.id } })
                   }
                 >
                   {group.avatar_url ? (
@@ -139,7 +139,7 @@ export default function GroupsScreen() {
                     key={invite.group_id}
                     style={styles.groupRow}
                     onPress={() =>
-                      router.push({ pathname: '/group-detail-test', params: { id: invite.group_id } })
+                      router.push({ pathname: '/group/[id]', params: { id: invite.group_id } })
                     }
                   >
                     {invite.avatar_url ? (

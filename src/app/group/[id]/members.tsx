@@ -20,7 +20,7 @@ type ProfileResult = {
   avatar_url: string | null;
 };
 
-export default function GroupMemberTestScreen() {
+export default function GroupMembersScreen() {
   // Hämtar gruppens ID från föregående sida
   const { id } = useLocalSearchParams<{ id: string }>();
 

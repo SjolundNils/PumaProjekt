@@ -4,7 +4,7 @@
  * Sida för att ändra en befintlig grupps bild, namn och beskrivning.
  * Kan öppnas från vilken skärm som helst:
  *
- *   router.push({ pathname: '/edit-group/[groupId]', params: { groupId } });
+ *   router.push({ pathname: '/group/[id]/edit', params: { id: groupId } });
  *
  * Bara gruppens ägare kan ändra gruppen. Andra ser ett meddelande istället
  * för formuläret. Databasen kontrollerar detta också, så det går inte att
@@ -19,14 +19,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    useColorScheme,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  useColorScheme,
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -43,7 +43,7 @@ const MAX_NAME_LENGTH = 40;
 const MAX_DESCRIPTION_LENGTH = 200;
 
 export default function EditGroupScreen() {
-  const { groupId } = useLocalSearchParams<{ groupId: string }>();
+  const { id: groupId } = useLocalSearchParams<{ id: string }>();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
 
