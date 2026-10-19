@@ -13,6 +13,7 @@
  */
 
 import { InviteButtons } from '@/components/groups/invite-buttons';
+import { FriendRequestButtons } from '@/components/friends/friend-request-buttons';
 import { RateButton } from '@/components/rating/rate-button';
 import { ThemedText } from '@/components/themed-text';
 import { ComponentSize, Radius, Spacing, Typography } from '@/constants/theme';
@@ -185,6 +186,10 @@ export function FeedItem({ event, currentUserId, myRating }: Props) {
         {/* Inbjudan till en grupp: Join/Decline direkt i flödet. */}
         {event.type === 'group_invite_received' && event.group?.id && (
           <InviteButtons groupId={event.group.id} />
+        )}
+
+        {event.type === 'friend_request_received' && event.actor?.id && (
+          <FriendRequestButtons userId={event.actor.id} />
         )}
 
         <ThemedText style={styles.time}>{formatRelativeTime(event.created_at)}</ThemedText>
