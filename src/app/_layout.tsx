@@ -109,7 +109,7 @@ export default function RootLayout() {
         />
 
         <Stack.Screen
-          name="edit-group/[groupId]"
+          name="group/[id]/edit"
           options={{ headerShown: true, title: 'Edit group', headerBackTitle: 'Back' }}
         />
 

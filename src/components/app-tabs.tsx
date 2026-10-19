@@ -30,22 +30,22 @@ export default function AppTabs() {
       iconColor={{ default: colors.textSecondary, selected: colors.accentIndigo }}
       labelStyle={{ default: { color: colors.textSecondary }, selected: { color: colors.accentIndigo } }}>
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Flöde</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Flow</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="house.fill" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="groups">
-        <NativeTabs.Trigger.Label>Grupper</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Groups</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="person.3.fill" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="profile">
-        <NativeTabs.Trigger.Label>Profil</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="person.crop.circle.fill" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="add-song" role="search" hidden={hasChosenToday===true}>
-        <NativeTabs.Trigger.Label>Dagens låt</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Daily Track</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="plus" />
       </NativeTabs.Trigger>
 
