@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -38,6 +38,9 @@ export default function GroupMemberTestScreen() {
   // Visar om en sökning pågår
   const [searchLoading, setSearchLoading] = useState(false);
 
+  // åller reda på vilken sökning som är den senaste
+const searchRequestId = useRef(0);
+
   useEffect(() => {
     async function loadMembers() {
       if (!id) return;
@@ -62,11 +65,13 @@ export default function GroupMemberTestScreen() {
   }, [id]);
 
   //Söker efter användare i Supabase
-  async function searchUsers() {
-    const trimmed = search.trim();
+  async function searchUsers(query: string) {
+  const requestId = ++searchRequestId.current;
+  const trimmed = query.trim();
 
     if (!trimmed) {
       setSearchResults([]);
+      setSearchLoading(false);
       return;
     }
 
@@ -86,6 +91,9 @@ export default function GroupMemberTestScreen() {
     }
 
     const { data, error } = await request;
+
+    // Ignorera resultat från äldre sökningar
+    if (requestId !== searchRequestId.current) return;
 
     if (error) {
       console.log('Kunde inte söka efter användare:', error);
@@ -153,29 +161,43 @@ export default function GroupMemberTestScreen() {
           Share with friends
         </Text>
 
-        <TextInput
+        {/* Sökfält med automatiska namnförslag och kryss */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#F5F5F5',
+            borderRadius: 12,
+            paddingHorizontal: 14,
+          }}
+>
+      <TextInput
         placeholder="Search users..."
         value={search}
-
-        //Uppdaterar söktexten och tömmer gamla resultat
         onChangeText={(text) => {
           setSearch(text);
-          if (!text.trim()) {
-            setSearchResults([]);
-          }
+          searchUsers(text);
         }}
-
-        //Söker när användaren trycker Search på keyboard
-        onSubmitEditing={searchUsers}
-        returnKeyType="search"
-
         style={{
-          backgroundColor: '#F5F5F5',
-          padding: 14,
-          borderRadius: 12,
+          flex: 1,
+          paddingVertical: 14,
           fontSize: 16,
         }}
       />
+
+      {/* Kryss för att rensa sökningen */}
+      {search.length > 0 && (
+        <Pressable
+          onPress={() => {
+            setSearch('');
+            searchUsers('');
+          }}
+          hitSlop={10}
+        >
+          <Text style={{ fontSize: 22, color: '#888' }}>×</Text>
+        </Pressable>
+      )}
+    </View>
       {/*Visar att en sökning pågår */}
       {searchLoading && (
         <Text style={{ marginTop: 16 }}>Searching...</Text>
