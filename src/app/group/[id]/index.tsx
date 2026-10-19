@@ -29,6 +29,7 @@ export default function GroupDetailScreen() {
     const [group, setGroup] = useState<{
         name: string;
         avatar_url: string | null;
+        description?: string | null;
     } | null>(null);
 
     const [members, setMembers] = useState<GroupMember[]>([]);
@@ -38,10 +39,10 @@ export default function GroupDetailScreen() {
     const [myRatings, setMyRatings] = useState<Record<number, number>>({});
     // Genomsnittsbetygen för låtarna
     const [averageRatings, setAverageRatings] = useState<Record<number, number>>({});
-	// 'loading' tills vi vet om jag är medlem, inbjuden eller inget av det
+    // 'loading' tills vi vet om jag är medlem, inbjuden eller inget av det
     const [inviteState, setInviteState] = useState<'loading' | InviteState>('loading');
 
-	useEffect(() => {
+    useEffect(() => {
         if (!id) return;
         let mounted = true;
 
@@ -92,7 +93,7 @@ export default function GroupDetailScreen() {
             // Hämtar information om den valda gruppen från Supabase
             const { data, error } = await supabase
                 .from('groups')
-                .select('name, avatar_url')
+                .select('name, avatar_url, description')
                 .eq('id', id)
                 .single();
 
@@ -167,8 +168,8 @@ export default function GroupDetailScreen() {
     useFocusEffect(
         useCallback(() => {
             async function loadRatings() {
-                
-				if (inviteState !== 'member' || !id) return;
+
+                if (inviteState !== 'member' || !id) return;
 
                 const songIds = dailySongs.map((song) => song.id);
 
@@ -196,7 +197,7 @@ export default function GroupDetailScreen() {
         }, [dailySongs, inviteState, id])
     );
 
-	if (inviteState === 'loading') {
+    if (inviteState === 'loading') {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
                 <ActivityIndicator />
@@ -229,6 +230,12 @@ export default function GroupDetailScreen() {
                     <Text style={{ fontSize: 24, fontWeight: 'bold' }}>
                         {group.name}
                     </Text>
+                    {/* Gruppens beskrivning, om den har någon */}
+                    {group.description && (
+                        <Text style={{ color: '#666', fontSize: 14, marginTop: 4 }}>
+                            {group.description}
+                        </Text>
+                    )}
 
                     {/* Visar gruppmedlemmarnas profilbilder – klicka för att se alla medlemmar */}
                     <Pressable
@@ -258,7 +265,7 @@ export default function GroupDetailScreen() {
                         ))}
                     </Pressable>
 
-					{/* Inbjuden: visar Join/Decline enligt designen */}
+                    {/* Inbjuden: visar Join/Decline enligt designen */}
                     {inviteState === 'pending' && id && (
                         <View style={{ marginTop: 16 }}>
                             <Text>You've been invited</Text>
