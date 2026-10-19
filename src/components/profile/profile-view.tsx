@@ -121,6 +121,27 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
 
   const { profile, albums, todaysSong } = data;
 
+  function confirmSignOut() {
+    Alert.alert('Log out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Log out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await signOut();
+            // _layout.tsx hanterar omdirigeringen till /login.
+          } catch (error) {
+            Alert.alert(
+              'Could not log out',
+              error instanceof Error ? error.message : 'Unknown error'
+            );
+          }
+        },
+      },
+    ]);
+  }
+
   return (
     <ThemedView style={styles.screen}>
       <ScrollView
@@ -216,17 +237,14 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
         ))}
 		
 		{isOwn && (
-		  <Pressable
-		    style={styles.logoutButton}
-		    onPress={async () => {
-			  await signOut();
-			  Alert.alert('Logged out', 'You are now logged out.');
-		    }}
-		  >
-		    <ThemedText style={styles.logoutText}>
-			  Log out
-		    </ThemedText>
-		  </Pressable>
+  		  <Pressable
+        	style={styles.logoutButton}
+    		onPress={confirmSignOut}
+  		  >
+    		<ThemedText style={styles.logoutText}>
+      		  Log out
+    		</ThemedText>
+  		  </Pressable>
 		)}
 
       </ScrollView>
