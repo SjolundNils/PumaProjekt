@@ -170,8 +170,16 @@ export default function GroupDetailTestScreen() {
                         {group.name}
                     </Text>
 
-                    {/* Visar gruppmedlemmarnas profilbilder */}
-                    <View style={{ flexDirection: 'row', marginTop: 16, gap: 8 }}>
+                    {/* Visar gruppmedlemmarnas profilbilder – klicka för att se alla medlemmar */}
+                    <Pressable
+                        onPress={() =>
+                            router.push({
+                                pathname: '/group-members-test',
+                                params: { id },
+                            })
+                        }
+                        style={{ flexDirection: 'row', marginTop: 16, gap: 8 }}
+                    >
                         {members.map((member) => (
                             <View key={member.user_id}>
                                 {member.profiles?.avatar_url ? (
@@ -191,27 +199,6 @@ export default function GroupDetailTestScreen() {
                                 )}
                             </View>
                         ))}
-                    </View>
-                    {/*Knapp för att lägga till personer i gruppen */}
-                    <Pressable
-                        onPress={() =>
-                            router.push({
-                                pathname: '/group-members-test',
-                                params: { id },
-                            })
-                        }
-                        style={{
-                            backgroundColor: '#F3F0FF',
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
-                            borderRadius: 16,
-                            alignSelf: 'flex-start',
-                            marginTop: 10,
-                        }}
-                    >
-                        <Text style={{ color: '#6955FF', fontSize: 13 }}>
-                            + Add people
-                        </Text>
                     </Pressable>
 
                     {/* Visar gruppmedlemmarnas dagens låtar */}
