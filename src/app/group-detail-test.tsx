@@ -230,8 +230,16 @@ export default function GroupDetailTestScreen() {
                         {group.name}
                     </Text>
 
-                    {/* Visar gruppmedlemmarnas profilbilder */}
-                    <View style={{ flexDirection: 'row', marginTop: 16, gap: 8 }}>
+                    {/* Visar gruppmedlemmarnas profilbilder – klicka för att se alla medlemmar */}
+                    <Pressable
+                        onPress={() =>
+                            router.push({
+                                pathname: '/group-members-test',
+                                params: { id },
+                            })
+                        }
+                        style={{ flexDirection: 'row', marginTop: 16, gap: 8 }}
+                    >
                         {members.map((member) => (
                             <View key={member.user_id}>
                                 {member.profiles?.avatar_url ? (
@@ -251,7 +259,7 @@ export default function GroupDetailTestScreen() {
                                 )}
                             </View>
                         ))}
-                    </View>
+                    </Pressable>
 
 					{/* Inbjuden: visar Join/Decline enligt designen */}
                     {inviteState === 'pending' && id && (
