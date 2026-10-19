@@ -21,6 +21,7 @@ import { todayInSweden } from '@/lib/dates';
 import type { FeedEvent } from '@/lib/feed';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
+import { Fragment, type ReactNode } from 'react';
 import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
 
 type Props = {
@@ -83,21 +84,28 @@ export function FeedItem({ event, currentUserId, myRating }: Props) {
     router.push({ pathname: '/user/[userId]', params: { userId: event.actor.id } });
   }
 
+  function openGroup() {
+    if (!event.group) return;
+    router.push({ pathname: '/group-detail-test', params: { id: event.group.id.toString() } });
+  }
+
   return (
-    <Pressable
-      style={styles.row}
-      onPress={() => spotifyUrl && Linking.openURL(spotifyUrl)}
-      disabled={!spotifyUrl}
-    >
+    <View style={styles.row}>
       <View style={styles.header}>
         {cardKind === 'group-to-track' ? (
-          event.group?.avatar_url ? (
-            <Image source={{ uri: event.group.avatar_url }} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, styles.groupPlaceholder]}>
-              <Ionicons name="people" size={18} color={theme.accentIndigo} />
-            </View>
-          )
+          <Pressable
+            onPress={openGroup}
+            disabled={!event.group}
+            accessibilityLabel={`Open ${event.group?.name ?? 'group'}`}
+          >
+            {event.group?.avatar_url ? (
+              <Image source={{ uri: event.group.avatar_url }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.groupPlaceholder]}>
+                <Ionicons name="people" size={18} color={theme.accentIndigo} />
+              </View>
+            )}
+          </Pressable>
         ) : (
           /* Egen tryckyta: öppnar aktörens profil istället för Spotify. */
           <Pressable
@@ -113,11 +121,23 @@ export function FeedItem({ event, currentUserId, myRating }: Props) {
             )}
           </Pressable>
         )}
-        <ThemedText style={styles.eventText} numberOfLines={2}>{text}</ThemedText>
+        <ThemedText style={styles.eventText} numberOfLines={2}>
+          {renderEventText(
+            text,
+            event.actor?.display_name,
+            openProfile,
+            event.group?.name,
+            openGroup,
+          )}
+        </ThemedText>
       </View>
 
       {cardKind === 'user-to-group' && event.group && (
-        <View style={styles.contentCard}>
+        <Pressable
+          style={styles.contentCard}
+          onPress={openGroup}
+          accessibilityLabel={`Open ${event.group.name}`}
+        >
           {event.group.avatar_url ? (
             <Image source={{ uri: event.group.avatar_url }} style={styles.groupIcon} />
           ) : (
@@ -131,10 +151,15 @@ export function FeedItem({ event, currentUserId, myRating }: Props) {
               Group
             </ThemedText>
           </View>
-        </View>
+        </Pressable>
       )}
       {(cardKind === 'user-to-track' || cardKind === 'group-to-track') && (song || metadata.album_name) && (
-        <View style={styles.contentCard}>
+        <Pressable
+          style={styles.contentCard}
+          onPress={() => spotifyUrl && Linking.openURL(spotifyUrl)}
+          disabled={!spotifyUrl}
+          accessibilityLabel="Open in Spotify"
+        >
           {coverUrl && <Image source={{ uri: coverUrl }} style={styles.cover} />}
           <View style={styles.contentText}>
             <ThemedText numberOfLines={1}>
@@ -144,7 +169,7 @@ export function FeedItem({ event, currentUserId, myRating }: Props) {
               {song?.artist_name ?? metadata.artist_name}
             </ThemedText>
           </View>
-        </View>
+        </Pressable>
       )}
 
       <View style={styles.footer}>
@@ -164,8 +189,60 @@ export function FeedItem({ event, currentUserId, myRating }: Props) {
 
         <ThemedText style={styles.time}>{formatRelativeTime(event.created_at)}</ThemedText>
       </View>
-    </Pressable>
+    </View>
   );
+}
+
+function renderEventText(
+  text: string,
+  actorName: string | null | undefined,
+  onActorPress: () => void,
+  groupName: string | null | undefined,
+  onGroupPress: () => void
+) {
+  const links = [
+    actorName
+      ? { name: actorName, index: text.indexOf(actorName), onPress: onActorPress }
+      : null,
+    groupName
+      ? { name: groupName, index: text.indexOf(groupName), onPress: onGroupPress }
+      : null,
+  ]
+    .filter((link): link is { name: string; index: number; onPress: () => void } => (
+      link !== null && link.index >= 0
+    ))
+    .sort((a, b) => a.index - b.index);
+
+  if (links.length === 0) return text;
+
+  const parts: ReactNode[] = [];
+  let cursor = 0;
+
+  links.forEach((link, index) => {
+    if (link.index < cursor) return;
+
+    if (link.index > cursor) {
+      parts.push(<Fragment key={`text-${index}`}>{text.slice(cursor, link.index)}</Fragment>);
+    }
+
+    parts.push(
+      <ThemedText
+        key={`link-${index}`}
+        onPress={link.onPress}
+        accessibilityRole="link"
+        accessibilityLabel={`Open ${link.name}`}
+      >
+        {link.name}
+      </ThemedText>
+    );
+    cursor = link.index + link.name.length;
+  });
+
+  if (cursor < text.length) {
+    parts.push(<Fragment key="text-end">{text.slice(cursor)}</Fragment>);
+  }
+
+  return parts;
 }
 
 function getCardKind(event: FeedEvent): FeedCardKind {
@@ -263,7 +340,8 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       gap: Spacing.two,
       padding: Spacing.three,
       paddingVertical: Spacing.two,
-      marginBottom: Spacing.three,
+      marginBottom: Spacing.two,
+      marginTop: Spacing.two,
       backgroundColor: theme.backgroundElement,
       borderRadius: Radius.medium,
     },

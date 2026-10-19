@@ -13,16 +13,18 @@
 
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, SectionList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FeedItem } from '@/components/feed/feed-item';
+import { FeedSection } from '@/components/feed/feed-section';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getErrorMessage } from '@/lib/errors';
 import { fetchFeed, type FeedEvent } from '@/lib/feed';
+import { createFeedSections } from '@/lib/feed-sections';
 import { fetchMyRatings } from '@/lib/ratings';
 import { supabase } from '@/lib/supabase';
 import { createTextStyles } from '@/styles/text';
@@ -41,6 +43,7 @@ export default function FeedScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [myRatings, setMyRatings] = useState<Record<number, number>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const sections = createFeedSections(events);
 
   /**
    * Hämtar flödet och ersätter listan.
@@ -94,14 +97,18 @@ export default function FeedScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.container} edges={['top']}>
-        <FlatList
-          data={events}
+        <SectionList
+          sections={sections}
           keyExtractor={(event) => event.id.toString()}
           renderItem={({ item }) => <FeedItem
             event={item}
             currentUserId={currentUserId}
             myRating={item.song ? myRatings[item.song.id] : undefined}
           />}
+          renderSectionHeader={({ section }) => (
+            <FeedSection title={section.title} />
+          )}
+          stickySectionHeadersEnabled={false}
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
           ListHeaderComponent={
