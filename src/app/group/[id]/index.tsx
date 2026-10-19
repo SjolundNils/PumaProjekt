@@ -22,7 +22,7 @@ type DailySong = {
     image_url: string | null;
 };
 
-export default function GroupDetailTestScreen() {
+export default function GroupDetailScreen() {
     //Hämtar id för gruppen som användaren väljer  
     const { id } = useLocalSearchParams<{ id: string }>();
 
@@ -233,10 +233,7 @@ export default function GroupDetailTestScreen() {
                     {/* Visar gruppmedlemmarnas profilbilder – klicka för att se alla medlemmar */}
                     <Pressable
                         onPress={() =>
-                            router.push({
-                                pathname: '/group-members-test',
-                                params: { id },
-                            })
+                            router.push({ pathname: '/group/[id]/members', params: { id } })
                         }
                         style={{ flexDirection: 'row', marginTop: 16, gap: 8 }}
                     >

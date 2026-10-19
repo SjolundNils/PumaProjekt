@@ -12,8 +12,8 @@
  * låttiteln (se components/rating/rate-button.tsx).
  */
 
-import { InviteButtons } from '@/components/groups/invite-buttons';
 import { FriendRequestButtons } from '@/components/friends/friend-request-buttons';
+import { InviteButtons } from '@/components/groups/invite-buttons';
 import { RateButton } from '@/components/rating/rate-button';
 import { ThemedText } from '@/components/themed-text';
 import { ComponentSize, Radius, Spacing, Typography } from '@/constants/theme';
@@ -87,7 +87,7 @@ export function FeedItem({ event, currentUserId, myRating }: Props) {
 
   function openGroup() {
     if (!event.group) return;
-    router.push({ pathname: '/group-detail-test', params: { id: event.group.id.toString() } });
+    router.push({ pathname: '/group/[id]', params: { id: event.group.id.toString() } });
   }
 
   return (
