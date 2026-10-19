@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Image, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, Image, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Information om en gruppmedlem
@@ -133,10 +133,39 @@ const searchRequestId = useRef(0);
 
     if (error) {
       console.log('Kunde inte skicka inbjudan:', error);
+
+      // Visar ett felmeddelande om inbjudan inte kunde skickas
+      Alert.alert(
+        'Invitation failed',
+        'Could not send the invitation. Please try again.'
+      );
       return;
     }
 
-    console.log('Gruppinbjudan skickad!');
+    // Visar bekräftelse när inbjudan har sparats i Supabase
+    Alert.alert(
+      'Invitation sent!',
+      'Your group invitation has been sent successfully.',
+      [{ text: 'OK' }]
+    );
+  }
+  
+  // Visar en bekräftelseruta innan en gruppinbjudan skickas
+  function confirmInvite(profile: ProfileResult) {
+    Alert.alert(
+      'Invite to group',
+      `Do you want to invite ${profile.display_name ?? 'this user'} to the group?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Invite',
+          onPress: () => inviteUser(profile.id),
+        },
+      ]
+    );
   }
 
   return (
@@ -238,7 +267,7 @@ const searchRequestId = useRef(0);
 
           {/* Plusknapp för att senare skicka gruppinbjudan */}
           <Pressable
-            onPress={() => inviteUser(profile.id)}
+            onPress={() => confirmInvite(profile)}
           >
             <Text style={{ color: '#6955FF', fontSize: 24 }}>+</Text>
           </Pressable>
