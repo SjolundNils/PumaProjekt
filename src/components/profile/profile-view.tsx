@@ -21,14 +21,15 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
-  Image,
-  Linking,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
+	ActivityIndicator,
+	Alert,
+	Image,
+	Linking,
+	Pressable,
+	RefreshControl,
+	ScrollView,
+	StyleSheet,
+	View,
 } from 'react-native';
 
 import { AlbumGrid } from '@/components/profile/album-grid';
@@ -36,6 +37,7 @@ import { RateButton } from '@/components/rating/rate-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
+import { signOut } from '@/lib/auth';
 import { getErrorMessage } from '@/lib/errors';
 import { fetchProfile, type ProfileData } from '@/lib/profile';
 import { fetchMyRatings } from '@/lib/ratings';
@@ -118,6 +120,27 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
   }
 
   const { profile, albums, todaysSong } = data;
+
+  function confirmSignOut() {
+    Alert.alert('Log out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Log out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await signOut();
+            // _layout.tsx hanterar omdirigeringen till /login.
+          } catch (error) {
+            Alert.alert(
+              'Could not log out',
+              error instanceof Error ? error.message : 'Unknown error'
+            );
+          }
+        },
+      },
+    ]);
+  }
 
   return (
     <ThemedView style={styles.screen}>
@@ -212,6 +235,18 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
             </View>
           </View>
         ))}
+		
+		{isOwn && (
+  		  <Pressable
+        	style={styles.logoutButton}
+    		onPress={confirmSignOut}
+  		  >
+    		<ThemedText style={styles.logoutText}>
+      		  Log out
+    		</ThemedText>
+  		  </Pressable>
+		)}
+
       </ScrollView>
     </ThemedView>
   );
@@ -240,4 +275,15 @@ const styles = StyleSheet.create({
   songName: { fontWeight: '600' },
   dim: { opacity: 0.6 },
   error: { color: '#c0392b', textAlign: 'center' },
+  logoutButton: {
+    alignSelf: 'center',
+    marginTop: 32,
+    marginBottom: 16,
+    paddingVertical: 8,
+  },
+  logoutText: {
+    fontSize: 13,
+    color: '#888888',
+    opacity: 0.7,
+  },
 });
