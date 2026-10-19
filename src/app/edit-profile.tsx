@@ -13,9 +13,13 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedTextInput } from '@/components/themed-text-input';
 import { ThemedTouchableOpacity } from '@/components/themed-touchable-oppacity';
 import { ThemedView } from '@/components/themed-view';
+import { useTheme } from '@/hooks/use-theme';
+import { signOut } from '@/lib/auth';
 import { getMySpotifyProfile, searchAlbums } from '@/lib/spotifyData';
 import { SpotifyNotConnectedError } from '@/lib/spotifySearch';
 import { supabase } from '@/lib/supabase';
+import { Ionicons } from '@expo/vector-icons';
+import { GlassContainer, GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import {
@@ -34,6 +38,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 /** Antal platser för favoritalbum. Motsvarar check-regeln i databasen. */
 const ALBUM_SLOTS = 6;
+const glassSupported = isLiquidGlassAvailable();
+const SEARCH_BAR_HEIGHT = 48;
 
 type Profile = {
   display_name: string | null;
@@ -91,6 +97,7 @@ export default function EditProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
+  const theme = useTheme();
 
   /**
    * Hämtar profilen och favoritalbumen för den inloggade användaren.
@@ -295,7 +302,7 @@ export default function EditProfileScreen() {
   if (!profile) {
     return (
       <SafeAreaView style={styles.centered}>
-        <Text>Ingen profil hittades.</Text>
+        <ThemedText>Ingen profil hittades.</ThemedText>
       </SafeAreaView>
     );
   }
@@ -316,36 +323,45 @@ export default function EditProfileScreen() {
          <SafeAreaView style={styles.screen} edges={['bottom']}>
 
         <Text style={styles.title}>Välj album för plats {editAlbumIndex}</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Sök efter album"
-          placeholderTextColor="#888"
-          value={albumQuery}
-          onChangeText={searchAlbum}
-        />
-        <TouchableOpacity onPress={() => setEditAlbumIndex(null)}>
-          <Text style={styles.label}>← Tillbaka</Text>
-        </TouchableOpacity>
-
-        {spotifyAlbumSearchResult.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.input}
-            onPress={() => selectFavoriteAlbum(item)}
-          >
-            {item.image_url && (
-              <Image
-                source={{ uri: item.image_url }}
-                style={{ width: 48, height: 48, borderRadius: 4 }}
-              />
-            )}
-            <View>
-              <Text style={styles.input}>{item.album_name}</Text>
-              <Text style={styles.input}>{item.artist_name}</Text>
-            </View>
+        <ScrollView contentContainerStyle={styles.contentAlbumSearch}>
+           <GlassContainer spacing={8} style={styles.searchRow}>
+              <GlassView style={[styles.searchField, !glassSupported && styles.fallback]} glassEffectStyle="regular">
+                <Ionicons name="search" size={18} color={theme.text}/>
+                <ThemedTextInput
+                  style={[styles.searchInput]}
+                  value={albumQuery}
+                  onChangeText={searchAlbum}
+                  placeholder="Search for a album"
+                  placeholderTextColor="#888"
+                  returnKeyType="search"
+                  autoCorrect={false}
+                  clearButtonMode="while-editing"
+                />
+              </GlassView>
+            </GlassContainer>
+          <TouchableOpacity onPress={() => setEditAlbumIndex(null)}>
+            <ThemedText style={styles.label}>← Tillbaka</ThemedText>
           </TouchableOpacity>
-        ))}
+
+          {spotifyAlbumSearchResult.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.addAlbumImage}
+              onPress={() => selectFavoriteAlbum(item)}
+            >
+              {item.image_url && (
+                <Image
+                  source={{ uri: item.image_url }}
+                  style={{ width: 48, height: 48, borderRadius: 4 }}
+                />
+              )}
+              <View>
+                <ThemedText style={styles.addAlbumNameText}>{item.album_name}</ThemedText>
+                <ThemedText style={styles.addAlbumArtistNameText}>{item.artist_name}</ThemedText>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -372,6 +388,7 @@ export default function EditProfileScreen() {
         </View>
           <ThemedText style={styles.label}>Display Name</ThemedText>
           <ThemedTextInput
+            style={[styles.displayNameStyle]}
             value={displayName}
             onChangeText={setDisplayName}
             placeholder="Ditt namn"
@@ -385,10 +402,6 @@ export default function EditProfileScreen() {
             placeholder="Berätta något om dig själv"
             multiline
           />
-
-          <Pressable style={styles.button} onPress={handleSave} disabled={saving}>
-            <ThemedText style={styles.buttonText}>{saving ? 'Saving...' : 'Save changes'}</ThemedText>
-          </Pressable>
 
           <ThemedText style={styles.sectionTitle}>Favorite albums</ThemedText>
           <View style={styles.grid}>
@@ -429,6 +442,20 @@ export default function EditProfileScreen() {
               </View>
            ))}
           </View>
+
+          <Pressable style={styles.button} onPress={handleSave} disabled={saving}>
+            <ThemedText style={styles.buttonText}>{saving ? 'Saving...' : 'Save changes'}</ThemedText>
+          </Pressable>
+
+          <Pressable
+            style={[styles.button, { backgroundColor: '#c0392b' }]}
+            onPress={async () => {
+              await signOut();
+              Alert.alert('Logged out', 'You are now logged out.');
+            }}
+          >
+            <ThemedText style={styles.buttonText}>Log out</ThemedText>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -439,12 +466,18 @@ const styles = StyleSheet.create({
   screen: { flex: 1, },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content: { padding: 16, gap: 8 },
+  contentAlbumSearch: { padding: 16, gap: 8 },
   title: { fontSize: 24, fontWeight: '700', marginBottom: 8 },
   avatar: { width: 80, height: 80, borderRadius: 40, marginBottom: 8 },
   label: { fontSize: 14, fontWeight: '600', marginTop: 8 },
   spotifyNameLabel: { fontSize: 14, fontWeight: '600', marginTop: 0, marginBottom: 8 },
   input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
-  multiline: { minHeight: 80, textAlignVertical: 'top' },
+  searchInput: { paddingHorizontal: 12, paddingVertical: 0, fontSize: 17, flex: 1 },
+  addAlbumNameText: { borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0, fontSize: 18 },
+  addAlbumArtistNameText: { borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0, fontSize: 16 },
+  addAlbumImage: { paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  multiline: { minHeight: 80, textAlignVertical: 'top', borderWidth: 1 },
+  displayNameStyle: { borderWidth: 1 },
   button: { backgroundColor: '#1DB954', borderRadius: 8, paddingVertical: 12, alignItems: 'center', marginTop: 8 },
   buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
   sectionTitle: { fontSize: 18, fontWeight: '700', marginTop: 24 },
@@ -489,4 +522,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+
+    searchButton: { width: SEARCH_BAR_HEIGHT, height: SEARCH_BAR_HEIGHT, borderRadius: 24 },
+    searchButtonInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    fallback: { borderWidth: StyleSheet.hairlineWidth },
+    searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  searchField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: SEARCH_BAR_HEIGHT, borderRadius: 24, paddingHorizontal: 16 },
 });
