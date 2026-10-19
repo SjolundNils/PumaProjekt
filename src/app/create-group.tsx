@@ -37,6 +37,8 @@ import { syncPlaylists } from '@/lib/spotifyPlaylists';
 import { supabase } from '@/lib/supabase';
 /** Max antal tecken i gruppnamnet. */
 const MAX_NAME_LENGTH = 40;
+const MAX_DESCRIPTION_LENGTH = 200;
+
 
 type Friend = {
   id: string;
@@ -49,6 +51,7 @@ export default function CreateGroupScreen() {
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
 
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [search, setSearch] = useState('');
   const [friends, setFriends] = useState<Friend[]>([]);
   const [selected, setSelected] = useState<Friend[]>([]);
@@ -127,6 +130,7 @@ export default function CreateGroupScreen() {
       const { data: groupId, error } = await supabase.rpc('create_group', {
         group_name: name,
         invitee_ids: selected.map((friend) => friend.id),
+        group_description: description,
       });
       if (error) throw error;
             // Laddar upp gruppbilden. Gruppen är redan skapad, så ett fel här ska
@@ -209,6 +213,20 @@ export default function CreateGroupScreen() {
           placeholderTextColor="#888"
           maxLength={MAX_NAME_LENGTH}
         />
+
+        <ThemedText style={styles.label}>Description</ThemedText>
+        <TextInput
+          style={[...inputStyle, styles.multiline]}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="What is this group about? (optional)"
+          placeholderTextColor="#888"
+          maxLength={MAX_DESCRIPTION_LENGTH}
+          multiline
+        />
+        <ThemedText style={styles.counter}>
+          {description.length}/{MAX_DESCRIPTION_LENGTH}
+        </ThemedText>
 
         <ThemedText style={styles.label}>Invite friends</ThemedText>
 
@@ -312,4 +330,6 @@ const styles = StyleSheet.create({
   buttonText: { color: '#fff', fontWeight: '600' },
   avatarSelected: { borderWidth: 0, opacity: 1 },
   avatarImage: { width: '100%', height: '100%', borderRadius: 48 },
+  multiline: { minHeight: 80, textAlignVertical: 'top' },
+  counter: { fontSize: 12, opacity: 0.5, alignSelf: 'flex-end' },
 });
