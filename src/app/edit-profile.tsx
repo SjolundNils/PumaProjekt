@@ -13,23 +13,22 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedTextInput } from '@/components/themed-text-input';
 import { ThemedTouchableOpacity } from '@/components/themed-touchable-oppacity';
 import { ThemedView } from '@/components/themed-view';
-import { signOut } from '@/lib/auth';
 import { getMySpotifyProfile, searchAlbums } from '@/lib/spotifyData';
 import { SpotifyNotConnectedError } from '@/lib/spotifySearch';
 import { supabase } from '@/lib/supabase';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+	ActivityIndicator,
+	Alert,
+	Image,
+	Pressable,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -386,16 +385,6 @@ export default function EditProfileScreen() {
             placeholder="Berätta något om dig själv"
             multiline
           />
-
-          <Pressable
-            style={[styles.button, { backgroundColor: '#c0392b' }]}
-            onPress={async () => {
-              await signOut();
-              Alert.alert('Logged out', 'You are now logged out.');
-            }}
-          >
-            <ThemedText style={styles.buttonText}>Log out</ThemedText>
-          </Pressable>
 
           <Pressable style={styles.button} onPress={handleSave} disabled={saving}>
             <ThemedText style={styles.buttonText}>{saving ? 'Saving...' : 'Save changes'}</ThemedText>
