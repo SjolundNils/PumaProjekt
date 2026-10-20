@@ -16,7 +16,8 @@
  * att trycka på (till exempel ett inlägg i flödet) utan att raden triggas.
  */
 
-import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
+import { SymbolView } from 'expo-symbols';
 import { Alert, Linking, Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
 type Size = 'small' | 'medium';
@@ -34,8 +35,8 @@ const SPOTIFY_BLACK = '#191414';
 
 // Måtten för de två storlekarna: cirklarnas diameter, ikonstorlek, avstånd
 const SIZES = {
-  small: { circle: 22, icon: 13, arrow: 14, padding: 3, gap: 4 },
-  medium: { circle: 28, icon: 17, arrow: 18, padding: 4, gap: 6 },
+  small: { circle: 22, icon: 15, arrow: 16, padding: 3, gap: 0 },
+  medium: { circle: 28, icon: 19, arrow: 20, padding: 4, gap: 0 },
 } as const;
 
 export function SpotifyButton({ url, size = 'small', style }: Props) {
@@ -71,11 +72,16 @@ export function SpotifyButton({ url, size = 'small', style }: Props) {
       ]}
     >
       <View style={[styles.circle, circle]}>
-        <FontAwesome5 name="spotify" brand size={s.icon} color={SPOTIFY_GREEN} />
+        <FontAwesome5 name="spotify" brand size={s.icon} color={SPOTIFY_BLACK} />
       </View>
       <View style={[styles.circle, circle]}>
-        <Feather name="arrow-up-right" size={s.arrow} color={SPOTIFY_GREEN} />
-      </View>
+  		<SymbolView
+    	  name="arrow.up.right"
+    	  size={s.arrow}
+    	  tintColor={SPOTIFY_BLACK}
+    	  type="monochrome"
+  		/>
+	  </View>
     </Pressable>
   );
 }
@@ -88,7 +94,7 @@ const styles = StyleSheet.create({
     backgroundColor: SPOTIFY_GREEN,
   },
   circle: {
-    backgroundColor: SPOTIFY_BLACK,
+    backgroundColor: SPOTIFY_GREEN,
     alignItems: 'center',
     justifyContent: 'center',
   },
