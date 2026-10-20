@@ -16,9 +16,10 @@
  * att trycka på (till exempel ett inlägg i flödet) utan att raden triggas.
  */
 
+import { openInSpotify } from '@/lib/spotifyLinks';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { SymbolView } from 'expo-symbols';
-import { Alert, Linking, Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
 type Size = 'small' | 'medium';
 
@@ -44,14 +45,6 @@ export function SpotifyButton({ url, size = 'small', style }: Props) {
 
   const s = SIZES[size];
 
-  async function open() {
-    try {
-      await Linking.openURL(url as string);
-    } catch {
-      Alert.alert('Could not open Spotify', 'Try again in a moment.');
-    }
-  }
-
   const circle = {
     width: s.circle,
     height: s.circle,
@@ -60,7 +53,7 @@ export function SpotifyButton({ url, size = 'small', style }: Props) {
 
   return (
     <Pressable
-      onPress={open}
+      onPress={() => openInSpotify(url)}
       hitSlop={8}
       accessibilityRole="link"
       accessibilityLabel="Open in Spotify"
