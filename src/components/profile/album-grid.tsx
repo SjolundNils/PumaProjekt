@@ -4,11 +4,11 @@
  * Visar de sex platserna för favoritalbum i ett rutnät med tre kolumner.
  *
  * Används både för att visa och redigera en profil:
- *   - Utan onPressSlot och onRemove visas albumen bara. Tomma platser
- *     visas som tomma rutor.
- *   - Med onPressSlot går varje plats att trycka på, och tomma platser
- *     visar sitt nummer. Med onRemove visas en knapp för att ta bort
- *     albumet på platsen.
+ *   - Utan onPressSlot och onRemove visas albumen bara. Ett tryck på ett
+ *     album öppnar det i Spotify. Tomma platser visas som tomma rutor.
+ *   - Med onPressSlot går varje plats att trycka på för att välja album,
+ *     och tomma platser visar sitt nummer. Då öppnas inget i Spotify.
+ *     Med onRemove visas en knapp för att ta bort albumet på platsen.
  *
  * Exempel:
  *   <AlbumGrid albums={albums} />
@@ -20,6 +20,7 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { toAlbumSlots, type FavoriteAlbum } from '@/lib/profile';
+import { openInSpotify, spotifyAlbumUrl } from '@/lib/spotifyLinks';
 
 type Props = {
   albums: FavoriteAlbum[];
@@ -37,13 +38,27 @@ export function AlbumGrid({ albums, onPressSlot, onRemove }: Props) {
       {toAlbumSlots(albums).map((album, index) => {
         const position = index + 1;
 
+        // Länk till albumet i Spotify. Bara när albumen visas (inte redigeras),
+        // och bara om albumet har ett giltigt Spotify-id.
+        const url = album && !editable ? spotifyAlbumUrl(album.spotify_album_id) : null;
+
+        function handlePress() {
+          if (editable) onPressSlot?.(position);
+          else if (url) openInSpotify(url);
+        }
+
         return (
           <View key={position} style={styles.slot}>
             <Pressable
-              onPress={() => onPressSlot?.(position)}
-              disabled={!editable}
+              onPress={handlePress}
+              disabled={!editable && !url}
+              accessibilityRole={url ? 'link' : 'button'}
               accessibilityLabel={
-                album ? `${album.album_name} by ${album.artist_name}` : `Empty slot ${position}`
+                url
+                  ? `Open ${album?.album_name} in Spotify`
+                  : album
+                    ? `${album.album_name} by ${album.artist_name}`
+                    : `Empty slot ${position}`
               }
             >
               {album?.image_url ? (
@@ -86,7 +101,7 @@ export function AlbumGrid({ albums, onPressSlot, onRemove }: Props) {
 const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   slot: { width: '30%' },
-  cover: { width: '100%', aspectRatio: 1 },
+  cover: { width: '100%', aspectRatio: 1, borderRadius: 6 },
   empty: { backgroundColor: 'rgba(128, 128, 128, 0.15)', justifyContent: 'center', alignItems: 'center' },
   removeButton: {
     position: 'absolute',
