@@ -31,7 +31,7 @@ type Props = {
 
 // Spotifys färger. Fungerar likadant i ljust och mörkt läge.
 const SPOTIFY_GREEN = '#1ED760';
-const SPOTIFY_BLACK = '#191414';
+const SPOTIFY_BLACK = '#000000';
 
 // Måtten för de två storlekarna: cirklarnas diameter, ikonstorlek, avstånd
 const SIZES = {
