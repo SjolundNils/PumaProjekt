@@ -113,23 +113,10 @@ const searchRequestId = useRef(0);
   async function inviteUser(userId: string) {
     if (!id) return;
 
-    // Hämtar den inloggade användaren
-    const { data: userData, error: userError } =
-      await supabase.auth.getUser();
-
-    if (userError || !userData.user) {
-      console.log('Kunde inte hämta inloggad användare');
-      return;
-    }
-
-    // Skapar en inbjudan till den befintliga gruppen
-    const { error } = await supabase
-      .from('group_invites')
-      .insert({
-        group_id: id,
-        invited_user_id: userId,
-        invited_by: userData.user.id,
-      });
+    const { error } = await supabase.rpc('invite_to_group', {
+      p_group_id: id,
+      p_user_id: userId,
+    });
 
     if (error) {
       console.log('Kunde inte skicka inbjudan:', error);
