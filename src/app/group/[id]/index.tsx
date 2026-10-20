@@ -251,7 +251,18 @@ export default function GroupDetailScreen() {
         <ScrollView
           contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}
         >
-          <BackButton onPress={goBack} />
+          <View style={styles.headerRow}>
+            <BackButton onPress={goBack} />
+            {isOwner && inviteState === 'member' && (
+              <ActionButton
+                label="Edit group"
+                icon="create-outline"
+                size="medium"
+                color="base"
+                onPress={() => router.push({ pathname: '/group/[id]/edit', params: { id } })}
+              />
+            )}
+          </View>
 
           {group && (
             <>
@@ -277,62 +288,53 @@ export default function GroupDetailScreen() {
               ) : null}
 
               {/* Medlemmarna. Ett tryck öppnar hela listan. */}
-              <Pressable
-                onPress={() => router.push({ pathname: '/group/[id]/members', params: { id } })}
-                style={styles.members}
-                accessibilityLabel="See all members"
-              >
-                {orderedMembers.map((member) => {
-                  const isGroupOwner = member.user_id === group.owner_id;
-                  const size = isGroupOwner ? OWNER_AVATAR : ComponentSize.avatar.default;
+              <View style={styles.membersRow}>
+                <Pressable
+                  onPress={() => router.push({ pathname: '/group/[id]/members', params: { id } })}
+                  style={styles.members}
+                  accessibilityLabel="See all members"
+                >
+                  {orderedMembers.map((member) => {
+                    const isGroupOwner = member.user_id === group.owner_id;
+                    const size = isGroupOwner ? OWNER_AVATAR : ComponentSize.avatar.default;
 
-                  return (
-                    <View key={member.user_id} style={styles.memberSlot}>
-                      {isGroupOwner && (
-                        <MaterialCommunityIcons
-                          name="crown"
-                          size={16}
-                          color={theme.accentIndigo}
-                          style={styles.crown}
-                        />
-                      )}
-                      {member.profiles?.avatar_url ? (
-                        <Image
-                          source={{ uri: member.profiles.avatar_url }}
-                          style={{ width: size, height: size, borderRadius: size / 2 }}
-                        />
-                      ) : (
-                        <View
-                          style={{
-                            width: size,
-                            height: size,
-                            borderRadius: size / 2,
-                            backgroundColor: theme.backgroundSelected,
-                          }}
-                        />
-                      )}
-                    </View>
-                  );
-                })}
-              </Pressable>
-
-              {/* Medlemmar: redigera (ägaren) och länk till spellistan */}
-              {inviteState === 'member' && (
-                <View style={styles.actionRow}>
-                  {isOwner ? (
-                    <ActionButton
-                      label="Edit group"
-                      icon="create-outline"
-                      size="medium"
-                      color="base"
-                      onPress={() => router.push({ pathname: '/group/[id]/edit', params: { id } })}
-                    />
-                  ) : (
-                    <View />
-                  )}
-                  <SpotifyButton url={spotifyPlaylistUrl(group.spotify_playlist_id)} size="medium" />
-                </View>
-              )}
+                    return (
+                      <View key={member.user_id} style={styles.memberSlot}>
+                        {isGroupOwner && (
+                          <MaterialCommunityIcons
+                            name="crown"
+                            size={16}
+                          	color={theme.accentIndigo}
+                          	style={styles.crown}
+                          />
+                    	)}
+                      	{member.profiles?.avatar_url ? (
+                          <Image
+                            source={{ uri: member.profiles.avatar_url }}
+                            style={{ width: size, height: size, borderRadius: size / 2 }}
+                          />
+                        ) : (
+                          <View
+                            style={{
+                              width: size,
+                              height: size,
+                              borderRadius: size / 2,
+                              backgroundColor: theme.backgroundSelected,
+                            }}
+                          />
+                        )}
+                      </View>
+                    );
+                  })}
+            	</Pressable>
+			    {inviteState === 'member' && (
+                  <SpotifyButton
+                    url={spotifyPlaylistUrl(group.spotify_playlist_id)}
+                    size="medium"
+                    style={styles.spotifyLink}
+                  />
+                )}
+              </View>
 
               {/* Inbjuden: Join/Decline */}
               {inviteState === 'pending' && id && (
@@ -426,11 +428,13 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 20, lineHeight: 24 },
   description: { fontSize: 14, lineHeight: 17 },
 
-  members: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  membersRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three },
+  members: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: Spacing.two },
+  spotifyLink: { alignSelf: 'flex-end' },
   memberSlot: { alignItems: 'center' },
   crown: { marginBottom: 2 },
 
-  actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   invite: { gap: Spacing.one },
 
   songs: { marginTop: Spacing.one },
