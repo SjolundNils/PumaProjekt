@@ -11,16 +11,12 @@
  * nedåt för att uppdatera manuellt.
  */
 
-import { Link, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, SectionList, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { FeedItem } from '@/components/feed/feed-item';
 import { FeedSection } from '@/components/feed/feed-section';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, Spacing, Typography } from '@/constants/theme';
+import { useScrollToTopOnTabPress } from '@/hooks/use-scroll-to-top-on-tab-press';
 import { useTheme } from '@/hooks/use-theme';
 import { getErrorMessage } from '@/lib/errors';
 import { fetchFeed, type FeedEvent } from '@/lib/feed';
@@ -28,6 +24,10 @@ import { createFeedSections } from '@/lib/feed-sections';
 import { fetchMyRatings } from '@/lib/ratings';
 import { supabase } from '@/lib/supabase';
 import { createTextStyles } from '@/styles/text';
+import { Link, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
+import { ActivityIndicator, RefreshControl, ScrollView, SectionList, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function FeedScreen() {
   const theme = useTheme();
@@ -86,6 +86,10 @@ export default function FeedScreen() {
     setRefreshing(false);
   }
 
+  /** Scrollar flödet till toppen när användaren trycker på Flow i flikraden. */
+  const listRef = useRef<SectionList<FeedEvent>>(null);
+  useScrollToTopOnTabPress(listRef);
+
   if (loading) {
     return (
       <ThemedView style={styles.centered}>
@@ -100,10 +104,13 @@ export default function FeedScreen() {
         <SectionList
           sections={sections}
           keyExtractor={(event) => event.id.toString()}
+          ref={listRef}
           renderItem={({ item }) => <FeedItem
             event={item}
             currentUserId={currentUserId}
             myRating={item.song ? myRatings[item.song.id] : undefined}
+            
+            
           />}
           renderSectionHeader={({ section }) => (
             <FeedSection title={section.title} />
