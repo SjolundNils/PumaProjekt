@@ -24,7 +24,6 @@ import {
 	ActivityIndicator,
 	Alert,
 	Image,
-	Linking,
 	Pressable,
 	RefreshControl,
 	ScrollView,
@@ -38,11 +37,13 @@ import { RateButton } from '@/components/rating/rate-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
+import { SpotifyButton } from '@/components/ui/spotify-button';
 import { signOut } from '@/lib/auth';
 import { getErrorMessage } from '@/lib/errors';
 import { fetchProfile, type ProfileData } from '@/lib/profile';
 import { fetchMyRatings } from '@/lib/ratings';
 import { getRecentlyPlayed, RecentTrack } from '@/lib/spotifyData';
+import { spotifyTrackUrl } from '@/lib/spotifyLinks';
 
 type Props = {
   /** Användaren vars profil visas. */
@@ -191,12 +192,7 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
 
         <ThemedText type="default">Today's song</ThemedText>
         {todaysSong ? (
-          <Pressable
-            style={styles.songRow}
-            onPress={() =>
-              Linking.openURL(`https://open.spotify.com/track/${todaysSong.spotify_track_id}`)
-            }
-          >
+          <View style={styles.songRow}>
             {todaysSong.image_url && (
               <Image source={{ uri: todaysSong.image_url }} style={styles.songCover} />
             )}
@@ -209,7 +205,11 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
               </ThemedText>
               {!isOwn && <RateButton dailySongId={todaysSong.id} myRating={myRating} />}
             </View>
-          </Pressable>
+            <SpotifyButton
+              url={spotifyTrackUrl(todaysSong.spotify_track_id)}
+              style={styles.songLink}
+            />
+          </View>
         ) : (
           <ThemedText style={styles.dim}>
             {isOwn ? "You haven't picked a song today." : 'No song picked today.'}
@@ -272,9 +272,10 @@ const styles = StyleSheet.create({
   name: {},
   bio: { opacity: 0.8 },
   editButton: { alignSelf: 'flex-start', marginTop: 4 },
-  songRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  songCover: { width: 64, height: 64, borderRadius: 6 },
+  songRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(128, 128, 128, 0.3)', padding: 8, borderRadius: 6 },
+  songCover: { width: 64, height: 64 },
   songText: { flex: 1, gap: 2 },
+  songLink: { alignSelf: 'flex-end' },
   songName: { fontWeight: '600' },
   dim: { opacity: 0.6 },
   error: { color: '#c0392b', textAlign: 'center' },
