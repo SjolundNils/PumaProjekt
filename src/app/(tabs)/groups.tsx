@@ -12,13 +12,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
-	ActivityIndicator,
-	Image,
-	Pressable,
-	RefreshControl,
-	ScrollView,
-	StyleSheet,
-	View,
+  ActivityIndicator,
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -30,6 +30,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { getErrorMessage } from '@/lib/errors';
 import { acceptInvite, declineInvite, listGroupInvites, type GroupInvite } from '@/lib/groupInvites';
 import { listMyGroups, type MyGroup } from '@/lib/myGroups';
+import { SymbolView } from 'expo-symbols';
 
 type Tab = 'groups' | 'invites';
 
@@ -186,10 +187,7 @@ export default function GroupsScreen() {
                       {group.name}
                     </ThemedText>
                     <ThemedText style={[styles.meta, { color: theme.textSecondary }]}>
-                      Members: {group.member_count}
-                    </ThemedText>
-                    <ThemedText style={[styles.meta, { color: theme.textSecondary }]}>
-                      Songs: {group.songs_today}/{group.member_count}
+                      <SymbolView name="music.note" size={16} tintColor={theme.textSecondary} /> {group.songs_today} / {group.member_count}
                     </ThemedText>
                   </View>
                   <Ionicons name="chevron-forward" size={22} color={theme.textSecondary} />
