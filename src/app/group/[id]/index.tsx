@@ -15,11 +15,11 @@
  * ljust och mörkt läge.
  */
 
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { InviteButtons } from '@/components/groups/invite-buttons';
@@ -288,10 +288,11 @@ export default function GroupDetailScreen() {
                 <ThemedText style={styles.description}>{group.description}</ThemedText>
               ) : null}
 
-                            {/* Medlemmarna och en plus-cirkel. Ett tryck öppnar hela listan. */}
+              {/* Medlemmarna och en plus-cirkel. Ett tryck öppnar hela listan. */}
               <View style={styles.membersRow}>
                 <Pressable
                   onPress={() => router.push({ pathname: '/group/[id]/members', params: { id } })}
+				  disabled={inviteState !== 'member'}
                   style={styles.members}
                   accessibilityLabel={
                     inviteState === 'member' ? 'See all members or add more' : 'See all members'
@@ -304,12 +305,22 @@ export default function GroupDetailScreen() {
                     return (
                       <View key={member.user_id} style={styles.memberSlot}>
                         {isGroupOwner && (
-                          <SymbolView
-                            name="crown.fill"
-                            size={16}
-                            tintColor={theme.accentIndigo}
-                            style={styles.crown}
-                          />
+                          Platform.OS === 'ios' ? (
+							<SymbolView
+								name="crown.fill"
+								size={14}
+								tintColor={theme.accentIndigo}
+								type="monochrome"
+								style={styles.crown}
+							/>
+						  ) : (
+							<MaterialCommunityIcons
+								name="crown"
+								size={14}
+								color={theme.accentIndigo}
+								style={styles.crown}
+							/>
+						 )
                         )}
                         {member.profiles?.avatar_url ? (
                           <Image
