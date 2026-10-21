@@ -5,14 +5,17 @@
  *
  * Medlemsvyn visar ägaren (med krona) först. Ett tryck på en rad öppnar
  * profilen. De tre prickarna öppnar en ruta med Remove member (bara för
- * ägaren), Show profile och Cancel.
+ * ägaren), Show profile och Cancel. Medlemmar som inte är ägare kan lämna
+ * gruppen med Leave group längst ner. Ägaren kan inte lämna, utan tar bort
+ * gruppen på redigeringssidan.
  *
  * Add members-vyn söker bland användarens vänner som inte redan är med i
  * gruppen. Bara vänner kan bjudas in (databasfunktionen invite_to_group
- * kontrollerar det). Efter en inbjudan visas en bock i stället för plus.
+ * kontrollerar det).
  *
- * Att ta bort en medlem går via databasfunktionen remove_group_member, som
- * kontrollerar att anroparen är gruppens ägare.
+ * Alla åtgärder som ändrar gruppen frågar först, och går via
+ * databasfunktionerna remove_group_member, leave_group och invite_to_group,
+ * som kontrollerar behörigheten.
  *
  * Färger och mått kommer från temat, så sidan följer ljust och mörkt läge.
  */
@@ -52,6 +55,7 @@ type Member = {
   profiles: {
     display_name: string | null;
     avatar_url: string | null;
+    spotify_user_id: string | null;
   } | null;
 };
 
@@ -64,6 +68,7 @@ type Group = {
 const AVATAR = 44;
 const COVER = 64;
 const CIRCLE = 32;
+const CROWN = 16;
 
 /** Profilbild, eller en grå cirkel om den saknas. */
 function Avatar({ uri, color }: { uri: string | null | undefined; color: string }) {
@@ -89,6 +94,8 @@ export default function GroupMembersScreen() {
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState('');
   const [friends, setFriends] = useState<Friendship[]>([]);
+  // Vännernas användarnamn (vänlistan innehåller dem inte), med profilens id som nyckel
+  const [usernames, setUsernames] = useState<Record<string, string>>({});
   const [loadingFriends, setLoadingFriends] = useState(false);
   // Vänner som har fått en inbjudan under den här sessionen (visas med bock)
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
@@ -105,7 +112,9 @@ export default function GroupMembersScreen() {
         supabase.from('groups').select('name, avatar_url, owner_id').eq('id', id).maybeSingle(),
         supabase
           .from('group_members')
-          .select('user_id, joined_at, profiles!group_members_user_id_fkey(display_name, avatar_url)')
+          .select(
+            'user_id, joined_at, profiles!group_members_user_id_fkey(display_name, avatar_url, spotify_user_id)'
+          )
           .eq('group_id', id),
       ]);
       if (groupResult.error) throw groupResult.error;
@@ -141,15 +150,21 @@ export default function GroupMembersScreen() {
   );
 
   const isOwner = !!currentUserId && group?.owner_id === currentUserId;
+  // Medlemmar som inte är ägare kan lämna. Ägaren tar bort gruppen i stället.
+  const canLeave = !isOwner && members.some((m) => m.user_id === currentUserId);
 
   // Vänner som kan bjudas in: inte redan medlemmar, och som matchar sökningen
   const candidates = useMemo(() => {
     const memberIds = new Set(members.map((m) => m.user_id));
     const q = query.trim().toLowerCase();
     return friends.filter(
-      (f) => !memberIds.has(f.friend_id) && (q === '' || (f.display_name ?? '').toLowerCase().includes(q))
+      (f) =>
+        !memberIds.has(f.friend_id) &&
+        (q === '' ||
+          (f.display_name ?? '').toLowerCase().includes(q) ||
+          (usernames[f.friend_id] ?? '').toLowerCase().includes(q))
     );
-  }, [friends, members, query]);
+  }, [friends, members, query, usernames]);
 
   function goBack() {
     // I Add members går tillbaka till medlemslistan
@@ -173,12 +188,37 @@ export default function GroupMembersScreen() {
     setAdding(true);
     setLoadingFriends(true);
     try {
-      setFriends(await getFriends());
+      const list = await getFriends();
+      setFriends(list);
+
+      // Användarnamnen hämtas separat, eftersom vänlistan inte innehåller dem.
+      // Misslyckas det visas vännerna ändå, bara utan användarnamn.
+      const ids = list.map((f) => f.friend_id);
+      if (ids.length > 0) {
+        const { data } = await supabase.from('profiles').select('id, spotify_user_id').in('id', ids);
+        setUsernames(
+          Object.fromEntries(
+            (data ?? []).filter((p) => p.spotify_user_id).map((p) => [p.id, p.spotify_user_id as string])
+          )
+        );
+      }
     } catch (error) {
       Alert.alert('Could not load friends', getErrorMessage(error));
     } finally {
       setLoadingFriends(false);
     }
+  }
+
+  /** Frågar innan en inbjudan skickas. Den går inte att ta tillbaka. */
+  function confirmInvite(friend: Friendship) {
+    Alert.alert(
+      'Invite to group',
+      `Invite ${friend.display_name ?? 'this friend'} to ${group?.name ?? 'the group'}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Invite', onPress: () => invite(friend) },
+      ]
+    );
   }
 
   async function invite(friend: Friendship) {
@@ -198,6 +238,19 @@ export default function GroupMembersScreen() {
     }
   }
 
+  /** Frågar innan en medlem tas bort. */
+  function confirmRemove(member: Member) {
+    const name = member.profiles?.display_name ?? 'this member';
+    Alert.alert(
+      'Remove member',
+      `Remove ${name} from ${group?.name ?? 'the group'}? You can invite them again later.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: () => removeMember(member) },
+      ]
+    );
+  }
+
   async function removeMember(member: Member) {
     if (!id) return;
     try {
@@ -215,6 +268,34 @@ export default function GroupMembersScreen() {
     }
   }
 
+  /** Frågar innan du lämnar gruppen. */
+  function confirmLeave() {
+    Alert.alert(
+      'Leave group',
+      `Leave ${group?.name ?? 'the group'}? You will need a new invitation to join again.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Leave', style: 'destructive', onPress: leaveGroup },
+      ]
+    );
+  }
+
+  async function leaveGroup() {
+    if (!id) return;
+    try {
+      const { error } = await supabase.rpc('leave_group', { p_group_id: id });
+      if (error) throw error;
+
+      // Du har inte längre åtkomst till gruppens sidor, så stacken töms
+      // och du hamnar på grupplistan (som laddas om och inte visar gruppen).
+      // Din låt ligger kvar i spellistan till nästa synk (senast 04:00).
+      router.dismissAll();
+      router.navigate('/groups');
+    } catch (error) {
+      Alert.alert('Could not leave the group', getErrorMessage(error));
+    }
+  }
+
   /** Rutan som öppnas med de tre prickarna. */
   function openMenu(member: Member) {
     const name = member.profiles?.display_name ?? 'Member';
@@ -222,7 +303,7 @@ export default function GroupMembersScreen() {
 
     const buttons: AlertButton[] = [];
     if (canRemove) {
-      buttons.push({ text: 'Remove member', style: 'destructive', onPress: () => removeMember(member) });
+      buttons.push({ text: 'Remove member', style: 'destructive', onPress: () => confirmRemove(member) });
     }
     buttons.push({ text: 'Show profile', onPress: () => showProfile(member.user_id) });
     buttons.push({ text: 'Cancel', style: 'cancel' });
@@ -330,7 +411,7 @@ export default function GroupMembersScreen() {
                         {friend.display_name ?? 'Unknown'}
                       </ThemedText>
                       <Pressable
-                        onPress={() => invite(friend)}
+                        onPress={() => confirmInvite(friend)}
                         disabled={invited || busy}
                         style={[
                           styles.circle,
@@ -362,66 +443,76 @@ export default function GroupMembersScreen() {
               )}
             </>
           ) : (
-            orderedMembers.map((member) => {
-              const isGroupOwner = member.user_id === group.owner_id;
-              const name = member.profiles?.display_name ?? 'Unknown user';
+            <>
+              {orderedMembers.map((member) => {
+                const isGroupOwner = member.user_id === group.owner_id;
+                const name = member.profiles?.display_name ?? 'Unknown user';
 
-              return (
-                <Pressable
-                  key={member.user_id}
-                  style={styles.row}
-                  onPress={() => showProfile(member.user_id)}
-                  accessibilityLabel={`Open ${name}'s profile`}
-                >
-                  
+                return (
+                  <Pressable
+                    key={member.user_id}
+                    style={styles.row}
+                    onPress={() => showProfile(member.user_id)}
+                    accessibilityLabel={`Open ${name}'s profile`}
+                  >
+                    
 					<View>
-						{isGroupOwner && (
-							Platform.OS === 'ios' ? (
-								<SymbolView
-									name="crown.fill"
-									size={14}
-									tintColor={theme.accentIndigo}
-									type="monochrome"
-									style={styles.crown}
-								/>
-							) : (
-								<MaterialCommunityIcons
-									name="crown"
-									size={14}
-									color={theme.accentIndigo}
-									style={styles.crown}
-								/>
-							)
-						)}
+					  {isGroupOwner && (
+					  	Platform.OS === 'ios' ? (
+						  <SymbolView
+							name="crown.fill"
+							size={14}
+							tintColor={theme.accentIndigo}
+							type="monochrome"
+							style={styles.crown}
+						  />
+						) : (
+						  <MaterialCommunityIcons
+							name="crown"
+							size={14}
+							color={theme.accentIndigo}
+							style={styles.crown}
+						  />
+						)
+					  )}
 
-						<Avatar
-							uri={member.profiles?.avatar_url}
-							color={theme.backgroundSelected}
-						/>
+					  <Avatar
+						uri={member.profiles?.avatar_url}
+						color={theme.backgroundSelected}
+					  />
 					</View>
 
                   <ThemedText style={styles.name} numberOfLines={1}>
                     {name}
                   </ThemedText>
 
-                  <Pressable
-                    onPress={() => openMenu(member)}
-                    hitSlop={8}
-                    style={[styles.circle, { backgroundColor: theme.backgroundElement }]}
-                    accessibilityRole="button"
-                    accessibilityLabel={`More options for ${name}`}
-                  >
-                    <SymbolView
-                      name="ellipsis"
-                      size={14}
-                      weight="bold"
-                      tintColor={theme.accentIndigo}
-                      fallback={<Ionicons name="ellipsis-horizontal" size={16} color={theme.accentIndigo} />}
-                    />
+                    <Pressable
+                      onPress={() => openMenu(member)}
+                      hitSlop={8}
+                      style={[styles.circle, { backgroundColor: theme.backgroundElement }]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`More options for ${name}`}
+                    >
+                      <SymbolView
+                        name="ellipsis"
+                        size={14}
+                        weight="bold"
+                        tintColor={theme.accentIndigo}
+                        fallback={<Ionicons name="ellipsis-horizontal" size={16} color={theme.accentIndigo} />}
+                      />
+                    </Pressable>
                   </Pressable>
+                );
+              })}
+
+              {canLeave && (
+                <Pressable onPress={confirmLeave} style={styles.leave} hitSlop={8} accessibilityRole="button">
+                  <ThemedText style={[styles.leaveText, { color: theme.destructiveText }]}>
+                    Leave group
+                  </ThemedText>
                 </Pressable>
-              );
-            })
+              )}
+            </>
           )}
         </ScrollView>
       </SafeAreaView>
@@ -441,10 +532,15 @@ const styles = StyleSheet.create({
 
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingVertical: Spacing.two },
   name: { flex: 1, fontSize: 16 },
-  crown: { position: 'absolute', top: -10, left: (AVATAR - 14) / 2, zIndex: 1 },
+  // Kronan ligger helt ovanför bilden med ett litet mellanrum, som på gruppsidan.
+  // Den är placerad utanför flödet så att raden inte blir högre för ägaren.
+  crown: { position: 'absolute', top: -(CROWN + 2), left: (AVATAR - CROWN) / 2, zIndex: 1 },
 
   circle: { width: CIRCLE, height: CIRCLE, borderRadius: CIRCLE / 2, alignItems: 'center', justifyContent: 'center' },
   busy: { opacity: 0.5 },
   spinner: { marginTop: Spacing.four },
   error: { color: '#c0392b' },
+
+  leave: { alignSelf: 'center', marginTop: Spacing.four, paddingVertical: Spacing.two, paddingHorizontal: Spacing.three },
+  leaveText: { fontSize: 15, fontWeight: '500' },
 });
