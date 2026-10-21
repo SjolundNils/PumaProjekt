@@ -76,7 +76,7 @@ const colorStyles: Record<Color, (theme: AppTheme) => {
 }> = {
   base: (theme) => ({
     background: theme.backgroundElement,
-    foreground: theme.text,
+    foreground: theme.baseText,
   }),
   indigo: (theme) => ({
     background: theme.accentIndigo,
