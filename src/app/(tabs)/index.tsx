@@ -24,9 +24,9 @@ import { createFeedSections } from '@/lib/feed-sections';
 import { fetchMyRatings } from '@/lib/ratings';
 import { supabase } from '@/lib/supabase';
 import { createTextStyles } from '@/styles/text';
-import { Link, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, SectionList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, SectionList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function FeedScreen() {
@@ -126,20 +126,6 @@ export default function FeedScreen() {
                   We’re sure todays track will be the most indie one yet
                 </ThemedText>
               </View>
-
-              {/* TEST: tillfälliga länkar till testskärmarna. Tas bort senare. */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.testLinks}
-              >
-
-                <Link href={{ pathname: '/group/[id]/edit', params: { id: 'ab88b65d-eff3-4275-9b4c-44cc1490d647' } }}>
-                  <ThemedText type="link">Edit group (bara nils kan ändra)</ThemedText>
-                </Link>
-
-              </ScrollView>
-
 
               {errorMessage && (
                 <ThemedText style={[textStyles.secondary, styles.error]}>{errorMessage}</ThemedText>
