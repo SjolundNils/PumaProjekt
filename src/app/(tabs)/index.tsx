@@ -134,11 +134,6 @@ export default function FeedScreen() {
                 contentContainerStyle={styles.testLinks}
               >
 
-                <Link href="/create-group">
-                  <ThemedText themeColor="accentIndigo" type="link">Create group</ThemedText>
-                </Link>
-
-
                 <Link href={{ pathname: '/group/[id]/edit', params: { id: 'ab88b65d-eff3-4275-9b4c-44cc1490d647' } }}>
                   <ThemedText type="link">Edit group (bara nils kan ändra)</ThemedText>
                 </Link>

@@ -14,6 +14,7 @@ export const Colors = {
     backgroundElement: '#F6F6F6',
     backgroundSelected: '#E0E1E6',
     textSecondary: '#60646C',
+	baseText: '#6155F5',
 
     accentIndigo: '#6155F5',
     accentOrange: '#FF8D28',
@@ -31,6 +32,7 @@ export const Colors = {
     backgroundElement: '#212225',
     backgroundSelected: '#2E3135',
     textSecondary: '#B0B4BA',
+	baseText: '#ffffff',
 
     accentIndigo: '#6155F5',
     accentOrange: '#FF8D28',
