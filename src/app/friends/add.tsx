@@ -127,7 +127,7 @@ export default function AddFriendsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, styles.safeAreaWithHeaderSpacing]}>
       <BackButton onPress={() => router.back()} />
 
       <Text style={[textStyles.pageTitle, styles.title]}>Add friends</Text>
@@ -252,6 +252,7 @@ function createAddFriendsStyles(theme: ReturnType<typeof useTheme>) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background },
   safeArea: { flex: 1, paddingHorizontal: 16 },
+  safeAreaWithHeaderSpacing: { paddingTop: 8 },
   title: { marginTop: 16 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 24, marginBottom: 12 },
   searchField: {
