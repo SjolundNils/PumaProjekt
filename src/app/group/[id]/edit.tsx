@@ -6,7 +6,7 @@
  *
  *   router.push({ pathname: '/group/[id]/edit', params: { id: groupId } });
  *
- * Bara gruppens ägare kan ändra gruppen. Andra ser ett meddelande istället
+ * Bara gruppens ägare kan ändra gruppen samt radera den. Andra ser ett meddelande istället
  * för formuläret. Databasen kontrollerar detta också, så det går inte att
  * kringgå från appen.
  *
@@ -19,18 +19,20 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  useColorScheme,
+	ActivityIndicator,
+	Alert,
+	Image,
+	Pressable,
+	ScrollView,
+	StyleSheet,
+	TextInput,
+	useColorScheme,
+	View,
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { ActionButton } from '@/components/ui/action-button';
 import { Colors } from '@/constants/theme';
 import { getErrorMessage } from '@/lib/errors';
 import { pickGroupImage, uploadGroupAvatar, type GroupImage } from '@/lib/group-avatar';
@@ -57,6 +59,7 @@ export default function EditGroupScreen() {
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -137,6 +140,34 @@ export default function EditGroupScreen() {
     }
   }
 
+  /** Frågar innan gruppen tas bort. Det går inte att ångra. */
+  function confirmRemoveGroup() {
+    Alert.alert(
+      'Remove group',
+      "This permanently removes the group for all members, including its history in the feed. This can't be undone.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove group', style: 'destructive', onPress: removeGroup },
+      ]
+    );
+  }
+
+  async function removeGroup() {
+    setRemoving(true);
+    try {
+      const { error } = await supabase.rpc('delete_group', { p_group_id: groupId });
+      if (error) throw error;
+
+      // Gruppens sidor finns inte längre, så stacken töms och du hamnar på grupplistan
+      router.dismissAll();
+      router.navigate('/groups');
+    } catch (error) {
+      Alert.alert('Could not remove the group', getErrorMessage(error));
+    } finally {
+      setRemoving(false);
+    }
+  }
+
   if (loading) {
     return (
       <ThemedView style={styles.centered}>
@@ -210,6 +241,20 @@ export default function EditGroupScreen() {
         >
           <ThemedText style={styles.buttonText}>{saving ? 'Saving...' : 'Save'}</ThemedText>
         </Pressable>
+		
+		<View style={styles.dangerZone}>
+          <ActionButton
+            label="Remove group"
+            icon="trash-outline"
+            size="medium"
+            color="destructiveSecondary"
+            disabled={removing || saving}
+            onPress={confirmRemoveGroup}
+          />
+          <ThemedText style={styles.dangerHint}>
+            Owners can't leave a group. Removing it deletes it for everyone.
+          </ThemedText>
+        </View>
       </ScrollView>
     </ThemedView>
   );
@@ -242,4 +287,6 @@ const styles = StyleSheet.create({
   button: { backgroundColor: '#1DB954', paddingVertical: 14, borderRadius: 999, alignItems: 'center', marginTop: 16 },
   buttonDisabled: { opacity: 0.4 },
   buttonText: { color: '#fff', fontWeight: '600' },
+  dangerZone: { marginTop: 32, alignItems: 'center', gap: 8 },
+  dangerHint: { fontSize: 12, opacity: 0.5, textAlign: 'center' },
 });
