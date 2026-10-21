@@ -15,8 +15,9 @@
  * ljust och mörkt läge.
  */
 
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -287,12 +288,14 @@ export default function GroupDetailScreen() {
                 <ThemedText style={styles.description}>{group.description}</ThemedText>
               ) : null}
 
-              {/* Medlemmarna. Ett tryck öppnar hela listan. */}
+                            {/* Medlemmarna och en plus-cirkel. Ett tryck öppnar hela listan. */}
               <View style={styles.membersRow}>
                 <Pressable
                   onPress={() => router.push({ pathname: '/group/[id]/members', params: { id } })}
                   style={styles.members}
-                  accessibilityLabel="See all members"
+                  accessibilityLabel={
+                    inviteState === 'member' ? 'See all members or add more' : 'See all members'
+                  }
                 >
                   {orderedMembers.map((member) => {
                     const isGroupOwner = member.user_id === group.owner_id;
@@ -301,14 +304,14 @@ export default function GroupDetailScreen() {
                     return (
                       <View key={member.user_id} style={styles.memberSlot}>
                         {isGroupOwner && (
-                          <MaterialCommunityIcons
-                            name="crown"
+                          <SymbolView
+                            name="crown.fill"
                             size={16}
-                          	color={theme.accentIndigo}
-                          	style={styles.crown}
+                            tintColor={theme.accentIndigo}
+                            style={styles.crown}
                           />
-                    	)}
-                      	{member.profiles?.avatar_url ? (
+                        )}
+                        {member.profiles?.avatar_url ? (
                           <Image
                             source={{ uri: member.profiles.avatar_url }}
                             style={{ width: size, height: size, borderRadius: size / 2 }}
@@ -326,8 +329,22 @@ export default function GroupDetailScreen() {
                       </View>
                     );
                   })}
-            	</Pressable>
-			    {inviteState === 'member' && (
+
+                  {/* Grå cirkel med plus, bara för medlemmar (inbjudna kan inte bjuda in) */}
+                  {inviteState === 'member' && (
+                    <View style={[styles.addCircle, { backgroundColor: theme.accentIndigo }]}>
+                      <SymbolView
+                        name="plus"
+                        size={18}
+                        weight="semibold"
+                        tintColor={theme.accentText}
+                        fallback={<Ionicons name="add" size={22} color={theme.textSecondary} />}
+                      />
+                    </View>
+                  )}
+                </Pressable>
+
+                {inviteState === 'member' && (
                   <SpotifyButton
                     url={spotifyPlaylistUrl(group.spotify_playlist_id)}
                     size="medium"
@@ -434,6 +451,14 @@ const styles = StyleSheet.create({
   spotifyLink: { alignSelf: 'flex-end' },
   memberSlot: { alignItems: 'center' },
   crown: { marginBottom: 2 },
+
+  addCircle: {
+    width: ComponentSize.avatar.default,
+    height: ComponentSize.avatar.default,
+    borderRadius: ComponentSize.avatar.default / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   invite: { gap: Spacing.one },
 
