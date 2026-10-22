@@ -1,78 +1,138 @@
 /**
  * search-bar.tsx
  *
- * Sökfält med iOS Liquid Glass och en rund knapp med ett kryss bredvid,
- * som i add-song och i designen för Add Members.
+ * Appens sökfält: ett runt glasfält med förstoringsglas, och en valfri rund
+ * glasknapp bredvid. Samma utseende som på Add Track-sidan, så att alla
+ * sökfält i appen ser likadana ut.
  *
- *   <SearchBar value={query} onChangeText={setQuery} onClose={() => setQuery('')} />
+ * Fältet tar emot alla vanliga TextInput-egenskaper (value, onChangeText,
+ * onSubmitEditing och så vidare). Knappen visas bara om button skickas med:
  *
- * På Android och iOS äldre än 26 används en vanlig grå bakgrund i stället
- * för glaset. Färgerna kommer från temat, så fältet följer ljust och
- * mörkt läge.
+ * - icon 'search' visar en pil, för att starta sökningen.
+ * - icon 'close' visar ett kryss, till exempel för att rensa eller lämna
+ *   sökningen.
+ *
+ * Med loading visas en snurra i knappen istället för ikonen.
  */
-
+import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassContainer, GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, StyleSheet, TextInput } from 'react-native';
-
-import { useTheme } from '@/hooks/use-theme';
+import type { Ref } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  PlatformColor,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  TextInput,
+  TextInputProps,
+  ViewStyle,
+} from 'react-native';
 
 const glassSupported = isLiquidGlassAvailable();
-const HEIGHT = 48;
 
-type Props = {
-  value: string;
-  onChangeText: (text: string) => void;
-  /** Anropas när användaren trycker på krysset. */
-  onClose: () => void;
-  placeholder?: string;
-  autoFocus?: boolean;
+/** Höjden på fältet och knappen. */
+export const SEARCH_BAR_HEIGHT = 48;
+
+type SearchBarButton = {
+  icon: 'search' | 'close';
+  onPress: () => void;
+  /**
+   * Körs direkt när fingret landar. Behövs om tangentbordet är uppe, annars
+   * kan första trycket gå åt till att släppa tangentbordet.
+   */
+  onPressIn?: () => void;
+  accessibilityLabel?: string;
 };
 
-export function SearchBar({ value, onChangeText, onClose, placeholder = 'Search', autoFocus = false }: Props) {
+type Props = Omit<TextInputProps, 'style'> & {
+  ref?: Ref<TextInput>;
+  button?: SearchBarButton;
+  loading?: boolean;
+  /** Stil för hela raden, till exempel marginaler. */
+  style?: StyleProp<ViewStyle>;
+};
+
+/**
+ * Färgerna i sökfältet. På iOS används systemets egna färger, som byter
+ * automatiskt mellan ljust och mörkt läge. På Android används appens tema.
+ */
+function useSearchColors() {
   const theme = useTheme();
-  // Utan glas behövs en egen bakgrund, annars syns fältet inte
-  const fallback = !glassSupported && { backgroundColor: theme.backgroundElement };
+
+  if (Platform.OS === 'ios') {
+    return {
+      label: PlatformColor('label'),
+      secondaryLabel: PlatformColor('secondaryLabel'),
+      placeholder: PlatformColor('placeholderText'),
+      separator: PlatformColor('separator'),
+    };
+  }
+
+  return {
+    label: theme.text,
+    secondaryLabel: theme.textSecondary,
+    placeholder: theme.textSecondary,
+    separator: 'rgba(128,128,128,0.3)',
+  };
+}
+
+export function SearchBar({ ref, button, loading = false, style, ...inputProps }: Props) {
+  const colors = useSearchColors();
+  // Utan Liquid Glass blir glaset en vanlig vy, som får en tunn kant.
+  const fallback = !glassSupported && { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.separator };
 
   return (
-    <GlassContainer spacing={8} style={styles.row}>
+    <GlassContainer spacing={8} style={[styles.row, style]}>
       <GlassView style={[styles.field, fallback]} glassEffectStyle="regular">
         <SymbolView
           name="magnifyingglass"
           size={17}
-          tintColor={theme.textSecondary}
-          fallback={<Ionicons name="search" size={18} color={theme.textSecondary} />}
+          tintColor={colors.secondaryLabel}
+          fallback={<Ionicons name="search" size={18} color={colors.secondaryLabel as string} />}
         />
         <TextInput
-          style={[styles.input, { color: theme.text }]}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={theme.textSecondary}
-          autoFocus={autoFocus}
-          autoCorrect={false}
-          autoCapitalize="none"
+          ref={ref}
+          style={[styles.input, { color: colors.label }]}
+          placeholderTextColor={colors.placeholder}
           returnKeyType="search"
+          autoCorrect={false}
+          {...inputProps}
         />
       </GlassView>
 
-      <GlassView style={[styles.button, fallback]} glassEffectStyle="regular">
-        <Pressable
-          onPress={onClose}
-          style={({ pressed }) => [styles.buttonInner, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Clear search"
-        >
-          <SymbolView
-            name="xmark"
-            size={17}
-            weight="semibold"
-            tintColor={theme.text}
-            fallback={<Ionicons name="close" size={20} color={theme.text} />}
-          />
-        </Pressable>
-      </GlassView>
+      {button && (
+        <GlassView style={[styles.button, fallback]} glassEffectStyle="regular">
+          <Pressable
+            onPress={button.onPress}
+            onPressIn={button.onPressIn}
+            disabled={loading}
+            style={({ pressed }) => [styles.buttonInner, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={button.accessibilityLabel ?? (button.icon === 'close' ? 'Close search' : 'Search')}
+          >
+            {loading ? (
+              <ActivityIndicator />
+            ) : (
+              <SymbolView
+                name={button.icon === 'close' ? 'xmark' : 'arrow.up'}
+                size={17}
+                weight="semibold"
+                tintColor={colors.label}
+                fallback={
+                  <Ionicons
+                    name={button.icon === 'close' ? 'close' : 'arrow-forward'}
+                    size={20}
+                    color={colors.label as string}
+                  />
+                }
+              />
+            )}
+          </Pressable>
+        </GlassView>
+      )}
     </GlassContainer>
   );
 }
@@ -84,12 +144,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    height: HEIGHT,
-    borderRadius: HEIGHT / 2,
+    height: SEARCH_BAR_HEIGHT,
+    borderRadius: SEARCH_BAR_HEIGHT / 2,
     paddingHorizontal: 16,
   },
   input: { flex: 1, fontSize: 17, paddingVertical: 0 },
-  button: { width: HEIGHT, height: HEIGHT, borderRadius: HEIGHT / 2 },
+  button: { width: SEARCH_BAR_HEIGHT, height: SEARCH_BAR_HEIGHT, borderRadius: SEARCH_BAR_HEIGHT / 2 },
   buttonInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.6 },
 });

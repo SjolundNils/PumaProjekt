@@ -8,17 +8,16 @@
  * Färger och mått kommer från temat, så sidan följer ljust och mörkt läge.
  */
 
-import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
-	ActivityIndicator,
-	Image,
-	Pressable,
-	RefreshControl,
-	ScrollView,
-	StyleSheet,
-	View,
+  ActivityIndicator,
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -26,10 +25,12 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
 import { BottomTabInset, Spacing, Typography } from '@/constants/theme';
+import { useScrollToTopOnTabPress } from '@/hooks/use-scroll-to-top-on-tab-press';
 import { useTheme } from '@/hooks/use-theme';
 import { getErrorMessage } from '@/lib/errors';
 import { acceptInvite, declineInvite, listGroupInvites, type GroupInvite } from '@/lib/groupInvites';
 import { listMyGroups, type MyGroup } from '@/lib/myGroups';
+import { SymbolView } from 'expo-symbols';
 
 type Tab = 'groups' | 'invites';
 
@@ -46,6 +47,10 @@ export default function GroupsScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   // Gruppen vars inbjudan hanteras just nu, så att knapparna inte trycks två gånger
   const [busyGroupId, setBusyGroupId] = useState<string | null>(null);
+
+  // Ett tryck på fliken i flikraden scrollar upp till toppen.
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTopOnTabPress(scrollRef);
 
   /** Hämtar grupperna jag är med i och mina väntande inbjudningar. */
   const load = useCallback(async () => {
@@ -115,6 +120,7 @@ export default function GroupsScreen() {
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.screen} edges={['top']}>
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         >
@@ -182,17 +188,24 @@ export default function GroupsScreen() {
                 >
                   {cover(group.avatar_url)}
                   <View style={styles.rowText}>
-                    <ThemedText style={styles.name} numberOfLines={1}>
-                      {group.name}
-                    </ThemedText>
+                    <View style={styles.nameRow}>
+                      <ThemedText style={[styles.name, styles.nameShrink]} numberOfLines={1}>
+                        {group.name}
+                      </ThemedText>
+                      {group.is_owner && (
+                        <SymbolView
+                          name="crown.fill"
+                          size={16}
+                          tintColor={theme.accentIndigo}
+                          accessibilityLabel="Owner"
+                        />
+                      )}
+                    </View>
                     <ThemedText style={[styles.meta, { color: theme.textSecondary }]}>
-                      Members: {group.member_count}
-                    </ThemedText>
-                    <ThemedText style={[styles.meta, { color: theme.textSecondary }]}>
-                      Songs: {group.songs_today}/{group.member_count}
+                      <SymbolView name="music.note" size={16} tintColor={theme.textSecondary} /> {group.songs_today} / {group.member_count}
                     </ThemedText>
                   </View>
-                  <Ionicons name="chevron-forward" size={22} color={theme.textSecondary} />
+                  <SymbolView name="chevron.forward" size={20} tintColor={theme.textSecondary} />
                 </Pressable>
               ))}
             </>
@@ -262,7 +275,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   cover: { width: COVER, height: COVER },
   rowText: { flex: 1, gap: 2 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   name: { fontSize: 18, fontWeight: '600' },
+  nameShrink: { flexShrink: 1 },
   meta: { fontSize: 14 },
   inviteButtons: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
 });

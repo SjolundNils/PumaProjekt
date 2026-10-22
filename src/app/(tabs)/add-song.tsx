@@ -19,6 +19,7 @@
  */
 
 import { ThemedView } from '@/components/themed-view';
+import { SEARCH_BAR_HEIGHT, SearchBar } from '@/components/ui/search-bar';
 import { useTheme } from '@/hooks/use-theme';
 import { useDailySong } from '@/lib/daily-song-context';
 import { getErrorMessage } from '@/lib/errors';
@@ -27,7 +28,7 @@ import { syncPlaylists } from '@/lib/spotifyPlaylists';
 import { searchTracks, SpotifyNotConnectedError } from '@/lib/spotifySearch';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import { GlassContainer, GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
+import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
@@ -66,27 +67,17 @@ import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
-  ZoomIn,
+  withTiming,
 } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const glassSupported = isLiquidGlassAvailable();
-const SEARCH_BAR_HEIGHT = 48;
 
-/** Hur länge bocken syns innan man skickas tillbaka till flödet. */
-const CONFIRMED_DELAY_MS = 1200;
+/** Hur lång tid omslaget tar på sig att flyga ner till profilfliken. */
+const FLY_DURATION_MS = 650;
 
-/**
- * När Cancel försvinner glider Confirm ut över hela bredden. Mjuk
- * inbromsning utan studs.
- */
-const buttonLayout = LinearTransition.duration(250).easing(Easing.out(Easing.cubic));
-
-/** Bocken tonar in och växer lite, utan att studsa. */
-const checkmarkEntering = ZoomIn.duration(200).easing(Easing.out(Easing.cubic)).delay(100);
-
-/** Väntar ett antal millisekunder. */
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+/** Hur stort omslaget är när det landar på profilikonen. */
+const FLY_TARGET_SIZE = 28;
 
 /**
  * Rutan tonar in och krymper från lite större till rätt storlek, som
@@ -102,8 +93,7 @@ const popupEntering = new Keyframe({
  * den här formen, så att resten av sidan bara behöver hantera en typ.
  *
  * key är unik för varje rad i en lista. För senast spelade är det
- * tidpunkten då låten spelades, eftersom samma låt kan förekomma flera
- * gånger.
+ * tidpunkten då låten spelades.
  */
 type Song = {
   key: string;
@@ -122,6 +112,20 @@ function toSong(track: { id: string; name: string; artist_name: string; image_ur
     artist_name: track.artist_name,
     image_url: track.image_url,
   };
+}
+
+/**
+ * Tar bort låtar som redan finns tidigare i listan, så att varje låt bara
+ * visas en gång. Den första behålls, vilket för senast spelade är den
+ * senaste gången låten spelades.
+ */
+function uniqueSongs(songs: Song[]): Song[] {
+  const seen = new Set<string>();
+  return songs.filter((song) => {
+    if (seen.has(song.id)) return false;
+    seen.add(song.id);
+    return true;
+  });
 }
 
 type Colors = {
@@ -191,6 +195,109 @@ function Cover({ uri, size, radius, colors }: { uri: string | null; size: number
         fallback={<Ionicons name="musical-note" size={size * 0.35} color={colors.secondaryLabel as string} />}
       />
     </View>
+  );
+}
+
+// --- Omslaget som flyger till profilen ---
+
+/** En ruta på skärmen, i fönstrets koordinater. */
+type Rect = { x: number; y: number; width: number; height: number };
+
+/**
+ * Var profilikonen i flikraden finns på skärmen, ungefär.
+ *
+ * Flikraden är iOS egen, så appen kan inte mäta var knapparna hamnar.
+ * Platsen räknas istället ut från hur flikraden brukar se ut:
+ *
+ * - Med Liquid Glass (iOS 26) ligger Feed, Groups och Profile i en ö
+ *   till vänster, och Daily Track som en egen rund knapp till höger.
+ *   Profile är den sista av tre i ön.
+ * - Annars är flikraden lika bred som skärmen med fyra lika breda
+ *   flikar, och Profile är den tredje.
+ *
+ * Hamnar omslaget lite fel, justera siffrorna här.
+ */
+function profileTabCenter(width: number, height: number, bottomInset: number) {
+  // Ikonen sitter lite ovanför flikradens mitt, med texten under.
+  const y = height - bottomInset - 24;
+
+  if (glassSupported) {
+    const islandLeft = 20;
+    // Daily Track-knappen (62 bred) och mellanrummet till ön.
+    const islandRight = width - 20 - 62 - 12;
+    return { x: islandLeft + ((islandRight - islandLeft) * 5) / 6, y };
+  }
+
+  return { x: (width * 2.5) / 4, y };
+}
+
+/**
+ * En kopia av omslaget som flyger från rutan ner till profilfliken, som
+ * om låten sparas där.
+ *
+ * Omslaget glider först åt sidan och faller sedan nedåt, så att det rör
+ * sig i en båge. På vägen krymper det och blir runt som en profilbild, och
+ * tonas bort precis när det landar.
+ *
+ * Kopian ligger utanför rutan, eftersom rutan klipper bort allt som hamnar
+ * utanför dess kanter.
+ */
+function FlyingCover({
+  uri,
+  from,
+  to,
+  colors,
+  onDone,
+}: {
+  uri: string | null;
+  from: Rect;
+  to: { x: number; y: number };
+  colors: Colors;
+  onDone: () => void;
+}) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    // onDone körs även om animationen avbryts, så att sparandet inte
+    // fastnar och väntar.
+    progress.value = withTiming(1, { duration: FLY_DURATION_MS, easing: Easing.inOut(Easing.quad) }, () => {
+      runOnJS(onDone)();
+    });
+  }, []);
+
+  const dx = to.x - (from.x + from.width / 2);
+  const dy = to.y - (from.y + from.height / 2);
+  const endScale = FLY_TARGET_SIZE / from.width;
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const p = progress.value;
+    // Sidled går fort i början, höjdled fort i slutet. Det ger bågen.
+    const easeOut = 1 - (1 - p) * (1 - p);
+    const easeIn = p * p;
+
+    return {
+      opacity: interpolate(p, [0.85, 1], [1, 0], Extrapolation.CLAMP),
+      borderRadius: interpolate(p, [0.2, 0.9], [0, from.width / 2], Extrapolation.CLAMP),
+      transform: [
+        { translateX: dx * easeOut },
+        { translateY: dy * easeIn },
+        // Lyfts lite först, som när man plockar upp något.
+        { scale: interpolate(p, [0, 0.15, 1], [1, 1.05, endScale], Extrapolation.CLAMP) },
+      ],
+    };
+  });
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.flyingCover,
+        { left: from.x, top: from.y, width: from.width, height: from.height },
+        animatedStyle,
+      ]}
+    >
+      <Cover uri={uri} size={from.width} radius={0} colors={colors} />
+    </Animated.View>
   );
 }
 
@@ -462,8 +569,9 @@ function TrackRow({ track, index, onPress }: { track: Song; index: number; onPre
 /**
  * Rutan mitt på skärmen där man bekräftar låten.
  *
- * När låten är sparad försvinner Cancel, Confirm breder ut sig över hela
- * bredden och visar en bock.
+ * När låten är sparad blir flying sann. Då tonar rutan bort och omslaget
+ * flyger ner till profilfliken, vilket är bekräftelsen på att låten är
+ * sparad. onFlown körs när det har landat.
  *
  * Medan låten sparas, och efter att den är sparad, går rutan inte att
  * stänga.
@@ -471,17 +579,48 @@ function TrackRow({ track, index, onPress }: { track: Song; index: number; onPre
 function ConfirmPopup({
   track,
   saving,
-  confirmed,
+  flying,
   onClose,
   onConfirm,
+  onFlown,
 }: {
   track: Song | null;
   saving: boolean;
-  confirmed: boolean;
+  flying: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  onFlown: () => void;
 }) {
   const colors = useColors();
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  // Omslagets plats i rutan, uppmätt när det ska flyga. Medan kopian
+  // flyger döljs omslaget i rutan.
+  const coverRef = useRef<View>(null);
+  const [flyFrom, setFlyFrom] = useState<Rect | null>(null);
+
+  // Rutan och den mörka bakgrunden tonas bort när omslaget lyfter.
+  const fade = useSharedValue(1);
+
+  useEffect(() => {
+    if (!flying) {
+      setFlyFrom(null);
+      fade.value = 1;
+      return;
+    }
+
+    coverRef.current?.measureInWindow((x, y, w, h) => {
+      setFlyFrom({ x, y, width: w, height: h });
+      fade.value = withTiming(0, { duration: 250, easing: Easing.out(Easing.cubic) });
+    });
+  }, [flying]);
+
+  const fadeStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
+  const cardStyle = useAnimatedStyle(() => ({
+    opacity: fade.value,
+    transform: [{ scale: interpolate(fade.value, [0, 1], [0.94, 1]) }],
+  }));
 
   // Rutan tonar ut efter att track blivit null. Den senaste låten sparas
   // så att innehållet inte försvinner mitt i uttoningen.
@@ -489,21 +628,26 @@ function ConfirmPopup({
   if (track) lastTrack.current = track;
   const shown = track ?? lastTrack.current;
 
-  const busy = saving || confirmed;
+  const busy = saving || flying;
   const close = busy ? undefined : onClose;
 
   return (
     <Modal visible={!!track} transparent animationType="fade" onRequestClose={close} statusBarTranslucent>
       <View style={styles.popupRoot}>
-        <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={close} accessibilityLabel="Close" />
+        <Animated.View style={[StyleSheet.absoluteFill, fadeStyle]}>
+          <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={close} accessibilityLabel="Close" />
+        </Animated.View>
 
         {shown && (
           <Animated.View entering={popupEntering} style={styles.popupWrap}>
+            <Animated.View style={cardStyle}>
             <GlassView
               style={[styles.popup, !glassSupported && { backgroundColor: colors.popup }]}
               glassEffectStyle="regular"
             >
-              <Cover uri={shown.image_url} size={200} radius={0} colors={colors} />
+              <View ref={coverRef} collapsable={false} style={flyFrom && styles.hidden}>
+                <Cover uri={shown.image_url} size={200} radius={0} colors={colors} />
+              </View>
 
               <View style={styles.popupText}>
                 <Text style={[styles.popupTitle, { color: colors.label }]} numberOfLines={2}>{shown.name}</Text>
@@ -516,28 +660,22 @@ function ConfirmPopup({
               </View>
 
               <View style={styles.popupButtons}>
-                {!confirmed && (
-                  <Animated.View
-                    exiting={FadeOut.duration(120)}
-                    layout={buttonLayout}
-                    style={styles.popupButtonWrap}
+                <View style={styles.popupButtonWrap}>
+                  <Pressable
+                    onPress={onClose}
+                    disabled={busy}
+                    style={({ pressed }) => [
+                      styles.popupButton,
+                      { backgroundColor: colors.fill },
+                      (pressed || busy) && styles.pressed,
+                    ]}
+                    accessibilityRole="button"
                   >
-                    <Pressable
-                      onPress={onClose}
-                      disabled={busy}
-                      style={({ pressed }) => [
-                        styles.popupButton,
-                        { backgroundColor: colors.fill },
-                        (pressed || saving) && styles.pressed,
-                      ]}
-                      accessibilityRole="button"
-                    >
-                      <Text style={[styles.popupButtonText, { color: colors.label }]}>Cancel</Text>
-                    </Pressable>
-                  </Animated.View>
-                )}
+                    <Text style={[styles.popupButtonText, { color: colors.label }]}>Cancel</Text>
+                  </Pressable>
+                </View>
 
-                <Animated.View layout={buttonLayout} style={styles.popupButtonWrap}>
+                <View style={styles.popupButtonWrap}>
                   <Pressable
                     onPress={onConfirm}
                     disabled={busy}
@@ -547,28 +685,29 @@ function ConfirmPopup({
                       pressed && styles.pressed,
                     ]}
                     accessibilityRole="button"
-                    accessibilityLabel={confirmed ? 'Saved' : `Confirm ${shown.name}`}
+                    accessibilityLabel={`Confirm ${shown.name}`}
                   >
-                    {confirmed ? (
-                      <Animated.View entering={checkmarkEntering}>
-                        <SymbolView
-                          name="checkmark"
-                          size={22}
-                          weight="bold"
-                          tintColor={colors.onTint}
-                          fallback={<Ionicons name="checkmark" size={24} color={colors.onTint as string} />}
-                        />
-                      </Animated.View>
-                    ) : saving ? (
+                    {busy ? (
                       <ActivityIndicator color={colors.onTint as string} />
                     ) : (
                       <Text style={[styles.popupButtonText, styles.confirmText, { color: colors.onTint }]}>Confirm</Text>
                     )}
                   </Pressable>
-                </Animated.View>
+                </View>
               </View>
             </GlassView>
+            </Animated.View>
           </Animated.View>
+        )}
+
+        {shown && flyFrom && (
+          <FlyingCover
+            uri={shown.image_url}
+            from={flyFrom}
+            to={profileTabCenter(width, height, insets.bottom)}
+            colors={colors}
+            onDone={onFlown}
+          />
         )}
       </View>
     </Modal>
@@ -583,7 +722,8 @@ export default function AddSongScreen() {
   const [loading, setLoading] = useState(false);
   const [loadingRecent, setLoadingRecent] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
+  const [flying, setFlying] = useState(false);
+  const flyDone = useRef<(() => void) | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { refresh: refreshDailySong } = useDailySong();
   const insets = useSafeAreaInsets();
@@ -664,7 +804,7 @@ export default function AddSongScreen() {
     setLoadingRecent(true);
     try {
       const recent = await getRecentlyPlayed();
-      setRecentSongs(recent.map((track) => toSong(track, track.played_at)));
+      setRecentSongs(uniqueSongs(recent.map((track) => toSong(track, track.played_at))));
     } catch (error) {
       handleSpotifyError(error);
     } finally {
@@ -684,7 +824,7 @@ export default function AddSongScreen() {
     setErrorMessage(null);
     try {
       const results = await searchTracks(trimmed);
-      setTracks(results.map((track) => toSong(track)));
+      setTracks(uniqueSongs(results.map((track) => toSong(track))));
     } catch (error) {
       handleSpotifyError(error);
     } finally {
@@ -712,63 +852,92 @@ export default function AddSongScreen() {
   /** Öppnar rutan för att bekräfta en låt. */
   function openPopup(track: Song) {
     Keyboard.dismiss();
-    setConfirmed(false);
+    setFlying(false);
     setSelectedTrack(track);
   }
 
   /**
-   * Sparar den valda låten som dagens låt.
+   * Låter omslaget flyga ner till profilfliken, och väntar tills det har
+   * landat. Vibrationen kommer när det landar, som bekräftelse.
+   */
+  function flyCoverToProfile() {
+    return new Promise<void>((resolve) => {
+      flyDone.current = () => {
+        flyDone.current = null;
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        resolve();
+      };
+      setFlying(true);
+    });
+  }
+
+  /**
+   * Sparar en låt som dagens låt i databasen.
+   */
+  async function saveDailySong(track: Song) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user.id;
+    if (!userId) throw new Error('You need to be signed in to pick a song.');
+
+    // song_date utelämnas: databasen sätter dagens datum i svensk tid.
+    const { error } = await supabase.from('daily_songs').insert({
+      user_id: userId,
+      spotify_track_id: track.id,
+      track_name: track.name,
+      artist_name: track.artist_name,
+      image_url: track.image_url,
+    });
+
+    // 23505 = unik regel bruten: användaren har redan valt en låt idag.
+    if (error?.code === '23505') {
+      throw new Error("You've already picked today's song.");
+    }
+    if (error) throw error;
+  }
+
+  /**
+   * Väljer den valda låten som dagens låt.
+   *
+   * Appen ska kännas snabb, så man skickas direkt till flödet när man
+   * trycker Confirm. Samtidigt flyger omslaget ner till profilfliken och
+   * låten sparas i bakgrunden. Rutan ligger ovanpå allt, även flikarna, så
+   * flygningen syns över flödet.
+   *
+   * Misslyckas sparandet visas felet efteråt. Det händer sällan, eftersom
+   * fliken döljs så fort dagens låt är vald.
    */
   async function confirmSelection() {
-    if (!selectedTrack || saving || confirmed) return;
+    const track = selectedTrack;
+    if (!track || saving || flying) return;
 
     setSaving(true);
+    const landed = flyCoverToProfile();
+    router.replace('/');
+
+    let saved = false;
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user.id;
-      if (!userId) throw new Error('You need to be signed in to pick a song.');
-
-      // song_date utelämnas: databasen sätter dagens datum i svensk tid.
-      const { error } = await supabase.from('daily_songs').insert({
-        user_id: userId,
-        spotify_track_id: selectedTrack.id,
-        track_name: selectedTrack.name,
-        artist_name: selectedTrack.artist_name,
-        image_url: selectedTrack.image_url,
-      });
-
-      // 23505 = unik regel bruten: användaren har redan valt en låt idag.
-      if (error?.code === '23505') {
-        throw new Error("You've already picked today's song.");
-      }
-      if (error) throw error;
-
-      // Låten är sparad. Bocken och vibrationen visas direkt, medan
-      // spellistorna uppdateras i bakgrunden.
-      setConfirmed(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      // Lägger låten i spellistorna för alla grupper användaren är med i.
-      // Misslyckas synken ska valet ändå gälla: syncPlaylists kastar inte, och
-      // nattjobbet hinner ikapp vid nästa körning.
-      //
-      // Väntar både på synken och på att bocken har synts en stund, så att
-      // animationen aldrig avbryts.
-      await Promise.all([syncPlaylists(), wait(CONFIRMED_DELAY_MS)]);
-
-      setSelectedTrack(null);
-      router.replace('/');
-
-      // Görs sist: när appen får veta att dagens låt är vald döljs den här
-      // fliken, och iOS byter då direkt till en annan flik. Görs det innan
-      // animationen syns den aldrig.
-      await refreshDailySong();
+      await saveDailySong(track);
+      saved = true;
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Could not save the song', getErrorMessage(error));
-    } finally {
-      setSaving(false);
     }
+
+    // Rutan stängs först när omslaget har landat, annars försvinner det
+    // mitt i flygningen.
+    await landed;
+    setSelectedTrack(null);
+    setSaving(false);
+    if (!saved) return;
+
+    // Lägger låten i spellistorna för alla grupper användaren är med i, i
+    // bakgrunden. syncPlaylists kastar inte: misslyckas synken gäller valet
+    // ändå, och nattjobbet hinner ikapp vid nästa körning.
+    syncPlaylists();
+
+    // Görs sist: när appen får veta att dagens låt är vald döljs den här
+    // fliken. Görs det medan omslaget flyger stängs rutan för tidigt.
+    await refreshDailySong();
   }
 
   // Plats under listan för sökfältet, och för tangentbordet när det är uppe.
@@ -850,64 +1019,26 @@ export default function AddSongScreen() {
             style={[styles.bottomOverlay, { paddingBottom: insets.bottom + 8, bottom: keyboardSpace }]}
             pointerEvents="box-none"
           >
-            <GlassContainer spacing={8} style={styles.searchRow}>
-              <GlassView style={[styles.searchField, !glassSupported && styles.fallback]} glassEffectStyle="regular">
-                <SymbolView
-                  name="magnifyingglass"
-                  size={17}
-                  tintColor={colors.secondaryLabel}
-                  fallback={<Ionicons name="search" size={18} color={colors.secondaryLabel as string} />}
-                />
-                <TextInput
-                  ref={searchInputRef}
-                  style={[styles.input, { color: colors.label }]}
-                  value={query}
-                  onChangeText={setQuery}
-                  onSubmitEditing={handleSearch}
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
-                  placeholder="Search for a song"
-                  placeholderTextColor={colors.placeholder}
-                  returnKeyType="search"
-                  autoCorrect={false}
-                  clearButtonMode="while-editing"
-                  enablesReturnKeyAutomatically
-                />
-              </GlassView>
-              <GlassView style={[styles.searchButton, !glassSupported && styles.fallback]} glassEffectStyle="regular">
-                {/* I sökläge blir knappen ett kryss som lämnar sökningen.
-                    Att söka görs då med tangentbordets Search-knapp. */}
-                <Pressable
-                  // onPress finns kvar för VoiceOver, som inte alltid skickar onPressIn.
-                  onPress={searching ? exitSearch : handleSearch}
-                  disabled={loading}
-                  // Trycket registreras direkt när fingret landar. Annars kan
-                  // första trycket gå åt till att släppa tangentbordet.
-                  onPressIn={searching ? exitSearch : undefined}
-                  style={({ pressed }) => [styles.searchButtonInner, pressed && styles.pressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel={searching ? 'Close search' : 'Search'}
-                >
-                  {loading ? (
-                    <ActivityIndicator />
-                  ) : (
-                    <SymbolView
-                      name={searching ? 'xmark' : 'arrow.up'}
-                      size={17}
-                      weight="semibold"
-                      tintColor={colors.label}
-                      fallback={
-                        <Ionicons
-                          name={searching ? 'close' : 'arrow-forward'}
-                          size={20}
-                          color={colors.label as string}
-                        />
-                      }
-                    />
-                  )}
-                </Pressable>
-              </GlassView>
-            </GlassContainer>
+            {/* I sökläge blir knappen ett kryss som lämnar sökningen.
+                Att söka görs då med tangentbordets Search-knapp. */}
+            <SearchBar
+              ref={searchInputRef}
+              value={query}
+              onChangeText={setQuery}
+              onSubmitEditing={handleSearch}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              placeholder="Search for a song"
+              clearButtonMode="while-editing"
+              enablesReturnKeyAutomatically
+              loading={loading}
+              button={
+                searching
+                  ? // onPress finns kvar för VoiceOver, som inte alltid skickar onPressIn.
+                    { icon: 'close', onPress: exitSearch, onPressIn: exitSearch }
+                  : { icon: 'search', onPress: handleSearch }
+              }
+            />
           </View>
         </View>
       </SafeAreaView>
@@ -915,9 +1046,10 @@ export default function AddSongScreen() {
       <ConfirmPopup
         track={selectedTrack}
         saving={saving}
-        confirmed={confirmed}
+        flying={flying}
         onClose={() => setSelectedTrack(null)}
         onConfirm={confirmSelection}
+        onFlown={() => flyDone.current?.()}
       />
     </ThemedView>
   );
@@ -977,13 +1109,9 @@ const styles = StyleSheet.create({
   popupButton: { height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   popupButtonText: { fontSize: 17, fontWeight: '500' },
   confirmText: { fontWeight: '600' },
+  hidden: { opacity: 0 },
+  flyingCover: { position: 'absolute', overflow: 'hidden' },
 
   // Sökfältet längst ner
   bottomOverlay: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16 },
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  searchField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: SEARCH_BAR_HEIGHT, borderRadius: 24, paddingHorizontal: 16 },
-  input: { flex: 1, fontSize: 17, paddingVertical: 0 },
-  searchButton: { width: SEARCH_BAR_HEIGHT, height: SEARCH_BAR_HEIGHT, borderRadius: 24 },
-  searchButtonInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  fallback: { borderWidth: StyleSheet.hairlineWidth },
 });

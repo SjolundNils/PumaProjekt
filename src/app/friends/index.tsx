@@ -9,6 +9,7 @@
  */
 import { ActionButton } from '@/components/ui/action-button';
 import { BackButton } from '@/components/ui/back-button';
+import { SearchBar } from '@/components/ui/search-bar';
 import { useTheme } from '@/hooks/use-theme';
 import { Friendship, getFriends, removeFriendship } from '@/lib/friends';
 import { openUserProfile } from '@/lib/profile';
@@ -25,7 +26,6 @@ import {
   Pressable,
   RefreshControl,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -120,24 +120,15 @@ export default function FriendsScreen() {
         />
       </View>
 
-      <View style={styles.searchBox}>
-        <Ionicons name="search" size={20} color={theme.text} />
-        <TextInput
-          style={[styles.searchInput, textStyles.body]}
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search"
-          placeholderTextColor={theme.textSecondary}
-          autoCapitalize="none"
-          autoCorrect={false}
-          returnKeyType="search"
-        />
-        {query.length > 0 && (
-          <Pressable onPress={() => setQuery('')} hitSlop={8}>
-            <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
-          </Pressable>
-        )}
-      </View>
+      {/* Listan filtreras medan man skriver. Krysset rensar sökningen. */}
+      <SearchBar
+        style={styles.search}
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Search"
+        autoCapitalize="none"
+        button={query.length > 0 ? { icon: 'close', onPress: () => setQuery(''), accessibilityLabel: 'Clear search' } : undefined}
+      />
 
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} />
