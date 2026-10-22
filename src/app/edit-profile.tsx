@@ -22,15 +22,18 @@ import { GlassContainer, GlassView, isLiquidGlassAvailable } from 'expo-glass-ef
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import {
-	ActivityIndicator,
-	Alert,
-	Image,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	Text,
-	TouchableOpacity,
-	View
+  ActivityIndicator,
+  Alert,
+  ColorValue,
+  Image,
+  Platform,
+  PlatformColor,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -81,6 +84,51 @@ function handleSpotifyError(error: unknown, title: string) {
   Alert.alert(title, error instanceof Error ? error.message : 'Unknown error');
 }
 
+type Colors = {
+  label: ColorValue;
+  secondaryLabel: ColorValue;
+  placeholder: ColorValue;
+  separator: ColorValue;
+  highlight: ColorValue;
+  fill: ColorValue;
+  popup: ColorValue;
+  tint: ColorValue;
+  onTint: ColorValue;
+  red: ColorValue;
+};
+
+function useColors(): Colors {
+  const theme = useTheme();
+
+  if (Platform.OS === 'ios') {
+    return {
+      label: PlatformColor('label'),
+      secondaryLabel: PlatformColor('secondaryLabel'),
+      placeholder: PlatformColor('placeholderText'),
+      separator: PlatformColor('separator'),
+      highlight: PlatformColor('systemGray5'),
+      fill: PlatformColor('tertiarySystemFill'),
+      popup: PlatformColor('secondarySystemGroupedBackground'),
+      tint: PlatformColor('systemIndigo'),
+      onTint: '#fff',
+      red: PlatformColor('systemRed'),
+    };
+  }
+
+  return {
+    label: theme.text,
+    secondaryLabel: '#8e8e93',
+    placeholder: '#8e8e93',
+    separator: 'rgba(128,128,128,0.3)',
+    highlight: theme.backgroundSelected,
+    fill: theme.backgroundElement,
+    popup: theme.background,
+    tint: '#0a84ff',
+    onTint: '#fff',
+    red: '#ff3b30',
+  };
+}
+
 export default function EditProfileScreen() {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchCounter = useRef(0);
@@ -96,6 +144,7 @@ export default function EditProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
   const theme = useTheme();
+  const colors = useColors();
 
   /**
    * Hämtar profilen och favoritalbumen för den inloggade användaren.
@@ -342,9 +391,13 @@ export default function EditProfileScreen() {
           </TouchableOpacity>
 
           {spotifyAlbumSearchResult.map((item) => (
-            <TouchableOpacity
+            <Pressable
               key={item.id}
-              style={styles.addAlbumImage}
+              style={({ pressed }) => [
+                styles.addAlbumImage,
+                {borderBottomColor: colors.separator, borderBottomWidth: 1},
+                pressed && { backgroundColor: colors.highlight },
+              ]}
               onPress={() => selectFavoriteAlbum(item)}
             >
               {item.image_url && (
@@ -357,7 +410,7 @@ export default function EditProfileScreen() {
                 <ThemedText style={styles.addAlbumNameText}>{item.album_name}</ThemedText>
                 <ThemedText style={styles.addAlbumArtistNameText}>{item.artist_name}</ThemedText>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </ScrollView>
       </SafeAreaView>
@@ -455,7 +508,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content: { padding: 16, gap: 8 },
-  contentAlbumSearch: { padding: 16, gap: 8 },
+  contentAlbumSearch: { padding: 16 },
   title: { fontSize: 24, fontWeight: '700', marginBottom: 8 },
   avatar: { width: 80, height: 80, borderRadius: 40, marginBottom: 8 },
   label: { fontSize: 14, fontWeight: '600', marginTop: 8 },
@@ -464,7 +517,7 @@ const styles = StyleSheet.create({
   searchInput: { paddingHorizontal: 12, paddingVertical: 0, fontSize: 17, flex: 1 },
   addAlbumNameText: { borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0, fontSize: 18 },
   addAlbumArtistNameText: { borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0, fontSize: 16 },
-  addAlbumImage: { paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  addAlbumImage: { paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, marginHorizontal: -16 },
   multiline: { minHeight: 80, textAlignVertical: 'top', borderWidth: 1 },
   displayNameStyle: { borderWidth: 1 },
   button: { backgroundColor: '#1DB954', borderRadius: 8, paddingVertical: 12, alignItems: 'center', marginTop: 8 },
