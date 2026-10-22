@@ -9,7 +9,7 @@
  */
 
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -25,6 +25,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
 import { BottomTabInset, Spacing, Typography } from '@/constants/theme';
+import { useScrollToTopOnTabPress } from '@/hooks/use-scroll-to-top-on-tab-press';
 import { useTheme } from '@/hooks/use-theme';
 import { getErrorMessage } from '@/lib/errors';
 import { acceptInvite, declineInvite, listGroupInvites, type GroupInvite } from '@/lib/groupInvites';
@@ -46,6 +47,10 @@ export default function GroupsScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   // Gruppen vars inbjudan hanteras just nu, så att knapparna inte trycks två gånger
   const [busyGroupId, setBusyGroupId] = useState<string | null>(null);
+
+  // Ett tryck på fliken i flikraden scrollar upp till toppen.
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTopOnTabPress(scrollRef);
 
   /** Hämtar grupperna jag är med i och mina väntande inbjudningar. */
   const load = useCallback(async () => {
@@ -115,6 +120,7 @@ export default function GroupsScreen() {
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.screen} edges={['top']}>
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         >

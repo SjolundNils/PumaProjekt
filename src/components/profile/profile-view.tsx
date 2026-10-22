@@ -19,7 +19,7 @@
  */
 
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
 	ActivityIndicator,
 	Alert,
@@ -38,6 +38,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
 import { SpotifyButton } from '@/components/ui/spotify-button';
+import { useScrollToTopOnTabPress } from '@/hooks/use-scroll-to-top-on-tab-press';
 import { signOut } from '@/lib/auth';
 import { getErrorMessage } from '@/lib/errors';
 import { fetchProfile, type ProfileData } from '@/lib/profile';
@@ -64,6 +65,11 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // På profilfliken scrollar ett tryck på fliken i flikraden upp till
+  // toppen. På andras profiler finns ingen flik, så där händer inget.
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTopOnTabPress(scrollRef);
 
   /**
    * Hämtar profilen. För andras profiler hämtas också användarens eget
@@ -147,6 +153,7 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
   return (
     <ThemedView style={styles.screen}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[styles.content, { paddingBottom: 32 + bottomInset }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >

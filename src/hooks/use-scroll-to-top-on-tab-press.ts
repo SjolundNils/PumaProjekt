@@ -27,8 +27,14 @@ import { RefObject, useEffect } from 'react';
  */
 type ScrollOptions = { y: number; animated: boolean };
 
+/**
+ * Vad getScrollResponder returnerar skiljer sig i typerna mellan listorna,
+ * så den tas emot som unknown och tolkas som en scrollyta när den anropas.
+ */
+type ScrollResponder = { scrollTo?(options: ScrollOptions): void } | null | undefined;
+
 type Scrollable = {
-  getScrollResponder?(): { scrollTo?(options: ScrollOptions): void } | null | undefined;
+  getScrollResponder?(): unknown;
   scrollTo?(options: ScrollOptions): void;
 };
 
@@ -49,7 +55,7 @@ export function useScrollToTopOnTabPress(ref: RefObject<Scrollable | null>) {
       if (list.scrollTo) {
         list.scrollTo({ y: 0, animated: true });
       } else {
-        list.getScrollResponder?.()?.scrollTo?.({ y: 0, animated: true });
+        (list.getScrollResponder?.() as ScrollResponder)?.scrollTo?.({ y: 0, animated: true });
       }
     });
 
