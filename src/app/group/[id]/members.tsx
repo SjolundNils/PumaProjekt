@@ -384,7 +384,6 @@ export default function GroupMembersScreen() {
               <SearchBar
                 value={query}
                 onChangeText={setQuery}
-                onClose={() => setQuery('')}
                 placeholder="Search friends"
                 autoFocus
               />
