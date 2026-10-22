@@ -2,6 +2,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
 import { BackButton } from '@/components/ui/back-button';
+import { SearchBar } from '@/components/ui/search-bar';
 import { useTheme } from '@/hooks/use-theme';
 import {
   acceptRequest,
@@ -15,18 +16,15 @@ import {
 import { openUserProfile } from '@/lib/profile';
 import { createFriendsStyles } from '@/styles/friends';
 import { createTextStyles } from '@/styles/text';
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   Image,
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -133,30 +131,24 @@ export default function AddFriendsScreen() {
       <Text style={[textStyles.pageTitle, styles.title]}>Add friends</Text>
       <Text style={textStyles.pageSubtitle}>Search for likeminded</Text>
 
-        <View style={styles.searchRow}>
-          <View style={styles.searchField}>
-            <Ionicons name="search" size={20} color={theme.text} />
-            <TextInput
-              style={[styles.input, textStyles.body]}
-              value={query}
-              onChangeText={(text) => {
-                setQuery(text);
-                if (!text.trim()) {
-                  setHits([]);
-                  setSearched(false);
-                }
-              }}
-              onSubmitEditing={handleSearch}
-              placeholder="Search users"
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-            />
-          </View>
-          <Pressable style={styles.searchButton} onPress={handleSearch} disabled={searching}>
-            {searching ? <ActivityIndicator color={theme.accentText} /> : <Ionicons name="arrow-forward" size={20} color={theme.accentText} />}
-          </Pressable>
-        </View>
+        <SearchBar
+          style={styles.search}
+          value={query}
+          onChangeText={(text) => {
+            setQuery(text);
+            if (!text.trim()) {
+              setHits([]);
+              setSearched(false);
+            }
+          }}
+          onSubmitEditing={handleSearch}
+          placeholder="Search users"
+          autoCapitalize="none"
+          clearButtonMode="while-editing"
+          enablesReturnKeyAutomatically
+          loading={searching}
+          button={{ icon: 'search', onPress: handleSearch }}
+        />
 
         {searched && hits.length === 0 && (
           <Text style={[textStyles.secondary, styles.empty]}>No users found.</Text>
@@ -254,31 +246,7 @@ function createAddFriendsStyles(theme: ReturnType<typeof useTheme>) {
   safeArea: { flex: 1, paddingHorizontal: 16 },
   safeAreaWithHeaderSpacing: { paddingTop: 8 },
   title: { marginTop: 16 },
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 24, marginBottom: 12 },
-  searchField: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    height: 48,
-    backgroundColor: theme.background,
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    shadowColor: theme.text,
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  input: { flex: 1 },
-  searchButton: {
-    width: 48,
-    height: 48,
-    backgroundColor: theme.accentIndigo,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  search: { marginTop: 24, marginBottom: 12 },
   empty: { paddingVertical: 12 },
   section: { marginTop: 20, marginBottom: 8 },
   listContent: { paddingBottom: 32 },

@@ -8,7 +8,6 @@
  * Färger och mått kommer från temat, så sidan följer ljust och mörkt läge.
  */
 
-import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
@@ -183,14 +182,24 @@ export default function GroupsScreen() {
                 >
                   {cover(group.avatar_url)}
                   <View style={styles.rowText}>
-                    <ThemedText style={styles.name} numberOfLines={1}>
-                      {group.name}
-                    </ThemedText>
+                    <View style={styles.nameRow}>
+                      <ThemedText style={[styles.name, styles.nameShrink]} numberOfLines={1}>
+                        {group.name}
+                      </ThemedText>
+                      {group.is_owner && (
+                        <SymbolView
+                          name="crown.fill"
+                          size={16}
+                          tintColor={theme.accentIndigo}
+                          accessibilityLabel="Owner"
+                        />
+                      )}
+                    </View>
                     <ThemedText style={[styles.meta, { color: theme.textSecondary }]}>
                       <SymbolView name="music.note" size={16} tintColor={theme.textSecondary} /> {group.songs_today} / {group.member_count}
                     </ThemedText>
                   </View>
-                  <Ionicons name="chevron-forward" size={22} color={theme.textSecondary} />
+                  <SymbolView name="chevron.forward" size={20} tintColor={theme.textSecondary} />
                 </Pressable>
               ))}
             </>
@@ -260,7 +269,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   cover: { width: COVER, height: COVER },
   rowText: { flex: 1, gap: 2 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   name: { fontSize: 18, fontWeight: '600' },
+  nameShrink: { flexShrink: 1 },
   meta: { fontSize: 14 },
   inviteButtons: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
 });
