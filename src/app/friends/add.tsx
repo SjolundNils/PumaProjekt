@@ -165,7 +165,7 @@ export default function AddFriendsScreen() {
               Pending requests from others
             </Text>
           }
-          ListEmptyComponent={!loading ? <Text style={[textStyles.secondary, styles.empty]}>None.</Text> : null}
+          ListEmptyComponent={!loading ? <Text style={[textStyles.secondary, styles.empty]}>None.</Text> : undefined}
           renderItem={({ item }) => (
             <ProfileRow name={item.display_name} avatar={item.avatar_url} styles={friendsStyles} textStyles={textStyles} onPress={() => openUserProfile(item.friend_id)}>
               <View style={styles.actions}>

@@ -18,7 +18,6 @@ import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassContainer, GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { SymbolView } from 'expo-symbols';
-import type { Ref } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -48,7 +47,7 @@ type SearchBarButton = {
 };
 
 type Props = Omit<TextInputProps, 'style'> & {
-  ref?: Ref<TextInput>;
+  ref?: React.Ref<React.ComponentRef<typeof TextInput>>;
   button?: SearchBarButton;
   loading?: boolean;
   /** Stil för hela raden, till exempel marginaler. */

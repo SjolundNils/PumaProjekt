@@ -68,7 +68,7 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
 
   // På profilfliken scrollar ett tryck på fliken i flikraden upp till
   // toppen. På andras profiler finns ingen flik, så där händer inget.
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   useScrollToTopOnTabPress(scrollRef);
 
   /**
