@@ -17,13 +17,13 @@ import { DailySongProvider } from '@/lib/daily-song-context';
 import { onSessionStatusChange, refreshSessionStatus, SessionStatus } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
 import {
-  DarkTheme,
-  DefaultTheme,
-  router,
-  Stack,
-  ThemeProvider,
-  useRootNavigationState,
-  useSegments,
+	DarkTheme,
+	DefaultTheme,
+	router,
+	Stack,
+	ThemeProvider,
+	useRootNavigationState,
+	useSegments,
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
@@ -93,7 +93,7 @@ export default function RootLayout() {
         <Stack.Screen
           name="create-group"
           options={{
-            headerShown: true,
+            headerShown: false,
             title: 'New group',
             headerBackTitle: 'Back',
           }}
