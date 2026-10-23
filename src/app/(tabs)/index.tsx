@@ -137,7 +137,7 @@ export default function FeedScreen() {
               <ThemedText style={[textStyles.secondary, styles.empty]}>
                 Inget har hänt än. När dina vänner väljer dagens låt dyker den upp här.
               </ThemedText>
-            ) : null
+            ) : undefined
           }
         />
       </SafeAreaView>
