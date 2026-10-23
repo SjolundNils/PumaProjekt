@@ -9,7 +9,7 @@
  */
 
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { ComponentRef, useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -49,7 +49,7 @@ export default function GroupsScreen() {
   const [busyGroupId, setBusyGroupId] = useState<string | null>(null);
 
   // Ett tryck på fliken i flikraden scrollar upp till toppen.
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   useScrollToTopOnTabPress(scrollRef);
 
   /** Hämtar grupperna jag är med i och mina väntande inbjudningar. */

@@ -597,7 +597,7 @@ function ConfirmPopup({
 
   // Omslagets plats i rutan, uppmätt när det ska flyga. Medan kopian
   // flyger döljs omslaget i rutan.
-  const coverRef = useRef<View>(null);
+const coverRef = useRef<React.ComponentRef<typeof View>>(null);
   const [flyFrom, setFlyFrom] = useState<Rect | null>(null);
 
   // Rutan och den mörka bakgrunden tonas bort när omslaget lyfter.
@@ -732,7 +732,7 @@ export default function AddSongScreen() {
   // --- Tangentbordet ---
 
   const [searchFocused, setSearchFocused] = useState(false);
-  const searchInputRef = useRef<TextInput>(null);
+  const searchInputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Medan man söker döljs senast spelade, så att resultaten får plats.
@@ -744,7 +744,7 @@ export default function AddSongScreen() {
   // Avståndet mellan sidans nederkant och skärmens nederkant, till exempel
   // om flikraden ligger under sidan. Behövs för att räkna ut hur högt
   // sökfältet ska lyftas.
-  const rootRef = useRef<View>(null);
+const rootRef = useRef<React.ComponentRef<typeof View>>(null);
   const [bottomGap, setBottomGap] = useState(0);
 
   function measureBottomGap() {
@@ -1011,7 +1011,7 @@ export default function AddSongScreen() {
                 <Text style={[styles.empty, { color: colors.secondaryLabel }]}>
                   Search for a song to see results.
                 </Text>
-              ) : null
+              ) : undefined
             }
           />
 

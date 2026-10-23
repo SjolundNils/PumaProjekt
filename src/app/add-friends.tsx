@@ -6,14 +6,14 @@ import { GlassContainer, GlassView, isLiquidGlassAvailable } from 'expo-glass-ef
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    StyleSheet,
-    TextInput,
-    View,
+  ActivityIndicator,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -99,7 +99,7 @@ export default function AddFriendsScreen() {
             ListEmptyComponent={
               !loading && hasSearched ? (
                 <ThemedText style={styles.message}>No users found.</ThemedText>
-              ) : null
+              ) : undefined
             }
           />
 
