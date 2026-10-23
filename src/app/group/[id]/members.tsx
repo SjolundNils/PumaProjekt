@@ -386,6 +386,12 @@ export default function GroupMembersScreen() {
                 onChangeText={setQuery}
                 placeholder="Search friends"
                 autoFocus
+                autoCapitalize="none"
+                button={
+                  query.length > 0
+                    ? { icon: 'close', onPress: () => setQuery(''), accessibilityLabel: 'Clear search' }
+                    : undefined
+                }
               />
 
               {loadingFriends ? (
