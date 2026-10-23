@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   cover: { width: 64, height: 64, borderRadius: 6 },
   songText: { flex: 1, gap: 2 },
   dim: { opacity: 0.6 },
-  button: { backgroundColor: '#1DB954', paddingVertical: 14, borderRadius: 999, alignSelf: 'stretch', alignItems: 'center' },
+  button: { backgroundColor: '#6155F5', paddingVertical: 14, borderRadius: 999, alignSelf: 'stretch', alignItems: 'center' },
   buttonDisabled: { opacity: 0.4 },
   buttonText: { color: '#fff', fontWeight: '600' },
   error: { color: '#c0392b', textAlign: 'center' },

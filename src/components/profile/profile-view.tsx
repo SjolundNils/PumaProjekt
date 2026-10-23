@@ -21,14 +21,14 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import {
-	ActivityIndicator,
-	Alert,
-	Image,
-	Pressable,
-	RefreshControl,
-	ScrollView,
-	StyleSheet,
-	View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
 
 import { AlbumGrid } from '@/components/profile/album-grid';
@@ -239,9 +239,13 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
               <Image source={{ uri: song.image_url }} style={styles.songCover} />
             )}
 
-            <View>
-              <ThemedText style={styles.songName}>{song.name}</ThemedText>
-              <ThemedText style={styles.dim}>{song.artist_name}</ThemedText>
+            <View style={styles.songText}>
+              <ThemedText style={styles.songName} numberOfLines={1}>
+                {song.name}
+              </ThemedText>
+              <ThemedText style={styles.dim} numberOfLines={1}>
+                {song.artist_name}
+              </ThemedText>
             </View>
           </View>
         ))}
