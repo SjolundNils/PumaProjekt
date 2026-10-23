@@ -1,53 +1,44 @@
 /**
- * edit-group/[groupId].tsx
+ * group/[id]/edit.tsx
  *
- * Sida för att ändra en befintlig grupps bild, namn och beskrivning.
- * Kan öppnas från vilken skärm som helst:
+ * Sida för att ändra en befintlig grupps bild, namn och beskrivning, eller
+ * ta bort gruppen. Kan öppnas från vilken skärm som helst:
  *
  *   router.push({ pathname: '/group/[id]/edit', params: { id: groupId } });
  *
- * Bara gruppens ägare kan ändra gruppen samt radera den. Andra ser ett meddelande istället
- * för formuläret. Databasen kontrollerar detta också, så det går inte att
- * kringgå från appen.
+ * Bara gruppens ägare kan ändra eller ta bort gruppen. Andra ser ett
+ * meddelande i stället för formuläret. Databasen kontrollerar detta också,
+ * så det går inte att kringgå från appen.
  *
  * Bilden sparas via uploadGroupAvatar (se lib/group-avatar.ts), namn och
  * beskrivning via databasfunktionen update_group. Byts bilden sätts den
- * också som omslag på gruppens spellista i Spotify.
+ * också som omslag på gruppens spellista i Spotify. Gruppen tas bort via
+ * databasfunktionen delete_group. Ägaren kan inte lämna gruppen utan att
+ * ta bort den.
+ *
+ * Formuläret är samma som när man skapar en grupp (se components/groups).
  */
 
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import {
-	ActivityIndicator,
-	Alert,
-	Image,
-	Pressable,
-	ScrollView,
-	StyleSheet,
-	TextInput,
-	useColorScheme,
-	View,
-} from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { GroupFields } from '@/components/groups/group-fields';
+import { GroupImagePicker } from '@/components/groups/group-image-picker';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
-import { Colors } from '@/constants/theme';
+import { BackButton } from '@/components/ui/back-button';
+import { Spacing, Typography } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { getErrorMessage } from '@/lib/errors';
 import { pickGroupImage, uploadGroupAvatar, type GroupImage } from '@/lib/group-avatar';
 import { supabase } from '@/lib/supabase';
 
-/** Max antal tecken i gruppnamnet. Samma som när gruppen skapas. */
-const MAX_NAME_LENGTH = 40;
-
-/** Max antal tecken i gruppbeskrivningen. Motsvarar check-regeln i databasen. */
-const MAX_DESCRIPTION_LENGTH = 200;
-
 export default function EditGroupScreen() {
+  const theme = useTheme();
   const { id: groupId } = useLocalSearchParams<{ id: string }>();
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -65,6 +56,11 @@ export default function EditGroupScreen() {
   useEffect(() => {
     loadGroup();
   }, [groupId]);
+
+  function goBack() {
+    if (router.canGoBack()) router.back();
+    else router.replace('/groups');
+  }
 
   /**
    * Hämtar gruppen och kontrollerar om den inloggade användaren är ägare.
@@ -132,7 +128,7 @@ export default function EditGroupScreen() {
         if (coverError) console.log('Kunde inte sätta omslaget i Spotify:', coverError);
       }
 
-      router.back();
+      goBack();
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -178,115 +174,87 @@ export default function EditGroupScreen() {
 
   if (!isOwner) {
     return (
-      <ThemedView style={styles.centered}>
-        <ThemedText style={styles.dim}>
-          {errorMessage ?? 'Only the group owner can edit this group.'}
-        </ThemedText>
+      <ThemedView style={styles.screen}>
+        <SafeAreaView style={styles.screen} edges={['top']}>
+          <View style={styles.content}>
+            <BackButton onPress={goBack} />
+            <ThemedText style={{ color: theme.textSecondary }}>
+              {errorMessage ?? 'Only the group owner can edit this group.'}
+            </ThemedText>
+          </View>
+        </SafeAreaView>
       </ThemedView>
     );
   }
 
-  // Den nya bilden om en är vald, annars den nuvarande.
-  const previewUrl = newImage?.uri ?? currentAvatarUrl;
-  const canSave = name.trim().length > 0 && !saving;
-  const inputStyle = [styles.input, { color: colors.text, borderColor: colors.text }];
+  const canSave = name.trim().length > 0 && !saving && !removing;
 
   return (
     <ThemedView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* Gruppbild. Tryck för att välja en ny. */}
-        <Pressable
-          style={[styles.avatar, { borderColor: colors.text }, previewUrl && styles.avatarSelected]}
-          onPress={handlePickImage}
-          accessibilityLabel="Change group picture"
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
         >
-          {previewUrl ? (
-            <Image source={{ uri: previewUrl }} style={styles.avatarImage} />
-          ) : (
-            <Ionicons name="camera-outline" size={32} color={colors.text} />
-          )}
-        </Pressable>
-        <ThemedText style={styles.hint}>Tap the picture to change it</ThemedText>
+          {/* Bakåt till vänster och Save till höger */}
+          <View style={styles.headerRow}>
+            <BackButton onPress={goBack} />
+            <ActionButton
+              label={saving ? 'Saving...' : 'Save'}
+              icon="checkmark"
+              size="medium"
+              color="indigo"
+              disabled={!canSave}
+              onPress={handleSave}
+            />
+          </View>
 
-        <ThemedText style={styles.label}>Name</ThemedText>
-        <TextInput
-          style={inputStyle}
-          value={name}
-          onChangeText={setName}
-          placeholder="Group name"
-          placeholderTextColor="#888"
-          maxLength={MAX_NAME_LENGTH}
-        />
+          <View>
+            <ThemedText style={Typography.pageTitle}>Edit group</ThemedText>
+            <ThemedText style={[styles.subtitle, { color: theme.textSecondary }]}>
+              Change the picture, name or description
+            </ThemedText>
+          </View>
 
-        <ThemedText style={styles.label}>Description</ThemedText>
-        <TextInput
-          style={[...inputStyle, styles.multiline]}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="What is this group about? (optional)"
-          placeholderTextColor="#888"
-          maxLength={MAX_DESCRIPTION_LENGTH}
-          multiline
-        />
-        <ThemedText style={styles.counter}>
-          {description.length}/{MAX_DESCRIPTION_LENGTH}
-        </ThemedText>
+          <GroupImagePicker uri={newImage?.uri ?? currentAvatarUrl} onPress={handlePickImage} />
 
-        {errorMessage && <ThemedText style={styles.error}>{errorMessage}</ThemedText>}
-
-        <Pressable
-          style={[styles.button, !canSave && styles.buttonDisabled]}
-          onPress={handleSave}
-          disabled={!canSave}
-        >
-          <ThemedText style={styles.buttonText}>{saving ? 'Saving...' : 'Save'}</ThemedText>
-        </Pressable>
-		
-		<View style={styles.dangerZone}>
-          <ActionButton
-            label="Remove group"
-            icon="trash-outline"
-            size="medium"
-            color="destructiveSecondary"
-            disabled={removing || saving}
-            onPress={confirmRemoveGroup}
+          <GroupFields
+            name={name}
+            onChangeName={setName}
+            description={description}
+            onChangeDescription={setDescription}
           />
-          <ThemedText style={styles.dangerHint}>
-            Owners can't leave a group. Removing it deletes it for everyone.
-          </ThemedText>
-        </View>
-      </ScrollView>
+
+          {errorMessage && (
+            <ThemedText style={{ color: theme.destructiveText }}>{errorMessage}</ThemedText>
+          )}
+
+          <View style={styles.dangerZone}>
+            <ActionButton
+              label="Remove group"
+              icon="trash-outline"
+              size="medium"
+              color="destructiveSecondary"
+              disabled={removing || saving}
+              onPress={confirmRemoveGroup}
+            />
+            <ThemedText style={[styles.dangerHint, { color: theme.textSecondary }]}>
+              Owners can't leave a group. Removing it deletes it for everyone.
+            </ThemedText>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  content: { padding: 24, gap: 12, paddingBottom: 48 },
-  avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-    opacity: 0.6,
-  },
-  avatarSelected: { borderWidth: 0, opacity: 1 },
-  avatarImage: { width: '100%', height: '100%', borderRadius: 48 },
-  hint: { fontSize: 12, opacity: 0.5, alignSelf: 'center', marginBottom: 8 },
-  label: { fontWeight: '600', marginTop: 8 },
-  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 17, opacity: 0.9 },
-  multiline: { minHeight: 80, textAlignVertical: 'top' },
-  counter: { fontSize: 12, opacity: 0.5, alignSelf: 'flex-end' },
-  dim: { opacity: 0.6, textAlign: 'center' },
-  error: { color: '#c0392b' },
-  button: { backgroundColor: '#1DB954', paddingVertical: 14, borderRadius: 999, alignItems: 'center', marginTop: 16 },
-  buttonDisabled: { opacity: 0.4 },
-  buttonText: { color: '#fff', fontWeight: '600' },
-  dangerZone: { marginTop: 32, alignItems: 'center', gap: 8 },
-  dangerHint: { fontSize: 12, opacity: 0.5, textAlign: 'center' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four },
+  content: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  subtitle: { fontSize: 18, lineHeight: 24 },
+  dangerZone: { marginTop: Spacing.five, alignItems: 'center', gap: Spacing.two },
+  dangerHint: { fontSize: 12, textAlign: 'center' },
 });

@@ -110,7 +110,7 @@ export default function RootLayout() {
 
         <Stack.Screen
           name="group/[id]/edit"
-          options={{ headerShown: true, title: 'Edit group', headerBackTitle: 'Back' }}
+          options={{ headerShown: false, title: 'Edit group', headerBackTitle: 'Back' }}
         />
 
       </Stack>
