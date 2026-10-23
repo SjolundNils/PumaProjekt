@@ -5,119 +5,98 @@
  *
  *   router.push('/create-group');
  *
- * Användaren väljer ett namn och söker bland sina vänner för att bjuda in
- * dem. Gruppen skapas via databasfunktionen create_group, som gör
- * användaren till ägare och skickar en inbjudan till varje vald vän.
- * De inbjudna accepterar eller nekar senare under gruppfliken.
+ * Användaren väljer bild, namn och beskrivning, och väljer vänner att bjuda
+ * in. Gruppen skapas via databasfunktionen create_group, som gör användaren
+ * till ägare och skickar en inbjudan till varje vald vän. De inbjudna
+ * accepterar eller nekar senare under gruppfliken.
  *
- * Valet av gruppbild är en platshållare som inte gör något än.
+ * När gruppen är skapad laddas bilden upp och spellistan skapas i Spotify
+ * (se syncPlaylists). Ett fel i något av de stegen stoppar inte skapandet,
+ * eftersom gruppen då redan finns.
+ *
+ * Färger och mått kommer från temat, så sidan följer ljust och mörkt läge.
  */
 
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  useColorScheme,
-  View,
-} from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { GroupFields } from '@/components/groups/group-fields';
+import { GroupImagePicker } from '@/components/groups/group-image-picker';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors } from '@/constants/theme';
+import { ActionButton } from '@/components/ui/action-button';
+import { BackButton } from '@/components/ui/back-button';
+import { SearchBar } from '@/components/ui/search-bar';
+import { Spacing, Typography } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { getErrorMessage } from '@/lib/errors';
+import { getFriends, type Friendship } from '@/lib/friends';
 import { pickGroupImage, uploadGroupAvatar, type GroupImage } from '@/lib/group-avatar';
 import { syncPlaylists } from '@/lib/spotifyPlaylists';
 import { supabase } from '@/lib/supabase';
-/** Max antal tecken i gruppnamnet. */
-const MAX_NAME_LENGTH = 40;
-const MAX_DESCRIPTION_LENGTH = 200;
 
-
-type Friend = {
-  id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-};
+const AVATAR = 44;
+const CIRCLE = 32;
 
 export default function CreateGroupScreen() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const theme = useTheme();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [coverImage, setCoverImage] = useState<GroupImage | null>(null);
+
   const [search, setSearch] = useState('');
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [selected, setSelected] = useState<Friend[]>([]);
+  const [friends, setFriends] = useState<Friendship[]>([]);
+  // Vännerna som ska bjudas in, med vännens profil-id som nyckel
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loadingFriends, setLoadingFriends] = useState(true);
+
   const [creating, setCreating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const [coverImage, setCoverImage] = useState<GroupImage | null>(null);
-
+  // Hämtar vännerna (accepterade vänskaper)
   useEffect(() => {
-    loadFriends();
+    let active = true;
+    getFriends()
+      .then((list) => active && setFriends(list))
+      .catch((error) => active && setErrorMessage(getErrorMessage(error)))
+      .finally(() => active && setLoadingFriends(false));
+    return () => {
+      active = false;
+    };
   }, []);
 
-  /**
-   * Hämtar användarens vänner (accepterade vänskaper).
-   *
-   * En vänskap har två personer, requester och addressee. Den av dem som
-   * inte är användaren själv är vännen.
-   */
-  async function loadFriends() {
+  // Vännerna som matchar sökningen. Listan är kort, så det sker direkt i appen.
+  const visibleFriends = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return q === '' ? friends : friends.filter((f) => (f.display_name ?? '').toLowerCase().includes(q));
+  }, [friends, search]);
+
+  function goBack() {
+    if (router.canGoBack()) router.back();
+    else router.replace('/groups');
+  }
+
+  function toggleFriend(friendId: string) {
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(friendId)) next.delete(friendId);
+      else next.add(friendId);
+      return next;
+    });
+  }
+
+  async function handlePickImage() {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user.id;
-      if (!userId) return;
-
-      const { data, error } = await supabase
-        .from('friendships')
-        .select(`
-          requester:profiles!friendships_requester_id_fkey ( id, display_name, avatar_url ),
-          addressee:profiles!friendships_addressee_id_fkey ( id, display_name, avatar_url )
-        `)
-        .eq('status', 'accepted')
-        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
-
-      if (error) throw error;
-
-      
-
-      const list = data
-        .map((row) => (row.requester?.id === userId ? row.addressee : row.requester))
-        .filter((friend): friend is Friend => friend !== null);
-
-      setFriends(list);
+      const image = await pickGroupImage();
+      if (image) setCoverImage(image);
     } catch (error) {
-      setErrorMessage(getErrorMessage(error));
-    } finally {
-      setLoadingFriends(false);
+      Alert.alert('Could not use the picture', getErrorMessage(error));
     }
-  }
-
-  // Sökresultat: vänner som matchar söktexten och inte redan är valda.
-  // Vänlistan är kort, så sökningen sker direkt i appen.
-  const query = search.trim().toLowerCase();
-  const results = friends.filter(
-    (friend) =>
-      !selected.some((s) => s.id === friend.id) &&
-      (query === '' || (friend.display_name ?? '').toLowerCase().includes(query))
-  );
-
-  function addFriend(friend: Friend) {
-    setSelected((current) => [...current, friend]);
-    setSearch('');
-  }
-
-  function removeFriend(id: string) {
-    setSelected((current) => current.filter((friend) => friend.id !== id));
   }
 
   /**
@@ -129,28 +108,29 @@ export default function CreateGroupScreen() {
     try {
       const { data: groupId, error } = await supabase.rpc('create_group', {
         group_name: name,
-        invitee_ids: selected.map((friend) => friend.id),
+        invitee_ids: [...selectedIds],
         group_description: description,
       });
       if (error) throw error;
-            // Laddar upp gruppbilden. Gruppen är redan skapad, så ett fel här ska
+
+      // Laddar upp gruppbilden. Gruppen är redan skapad, så ett fel här ska
       // inte stoppa resten. Gruppen får då ingen bild, men fungerar ändå.
-        if (groupId && coverImage) {
-          try {
-            await uploadGroupAvatar(groupId, coverImage);
-          } catch (imageError) {
-            console.log('Kunde inte ladda upp gruppbilden:', imageError);
-          }
+      if (groupId && coverImage) {
+        try {
+          await uploadGroupAvatar(groupId, coverImage);
+        } catch (imageError) {
+          console.log('Kunde inte ladda upp gruppbilden:', imageError);
         }
+      }
 
       // Skapar spellistan i Spotify. Gruppen är redan skapad, så ett fel här
       // ska inte stoppa något. Spellistan skapas då vid nästa synk (nattjobbet
       // skapar spellistor för grupper som saknar en).
       const sync = groupId ? await syncPlaylists(groupId) : null;
       const playlistOk = !!sync && sync.results.length > 0 && sync.results.every((r) => r.ok);
-            // Sätter gruppbilden som omslag på spellistan i Spotify. Det kräver
-      // att spellistan finns, så det görs bara om den skapades. Ett fel här
-      // ska inte stoppa något, eftersom gruppen och bilden i appen redan finns.
+
+      // Sätter gruppbilden som omslag på spellistan i Spotify. Det kräver att
+      // spellistan finns, så det görs bara om den skapades.
       if (playlistOk && coverImage && groupId) {
         const { error: coverError } = await supabase.functions.invoke('set-playlist-cover', {
           body: { groupId },
@@ -162,12 +142,12 @@ export default function CreateGroupScreen() {
         Alert.alert(
           'Group created',
           'The Spotify playlist could not be created right now. It will be created automatically later.',
-          [{ text: 'OK', onPress: () => router.back() }]
+          [{ text: 'OK', onPress: goBack }]
         );
         return;
       }
 
-      router.back();
+      goBack();
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -176,160 +156,133 @@ export default function CreateGroupScreen() {
   }
 
   const canCreate = name.trim().length > 0 && !creating;
-  const inputStyle = [styles.input, { color: colors.text, borderColor: colors.text }];
 
   return (
     <ThemedView style={styles.screen}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Gruppbild. Tryck för att välja eller byta bild. */}
-        <Pressable
-          style={[styles.avatar, { borderColor: colors.text }, coverImage && styles.avatarSelected]}
-          onPress={async () => {
-            try {
-              const image = await pickGroupImage();
-              if (image) setCoverImage(image);
-            } catch (pickError) {
-              Alert.alert('Could not use the picture', getErrorMessage(pickError));
-            }
-          }}
-          accessibilityLabel="Choose group picture"
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
         >
-          {coverImage ? (
-            <Image source={{ uri: coverImage.uri }} style={styles.avatarImage} />
-          ) : (
-            <Ionicons name="camera-outline" size={32} color={colors.text} />
-          )}
-        </Pressable>
+          <BackButton onPress={goBack} />
 
-        <ThemedText style={styles.label}>Name</ThemedText>
-        <TextInput
-          style={inputStyle}
-          value={name}
-          onChangeText={setName}
-          placeholder="Group name"
-          placeholderTextColor="#888"
-          maxLength={MAX_NAME_LENGTH}
-        />
-
-        <ThemedText style={styles.label}>Description</ThemedText>
-        <TextInput
-          style={[...inputStyle, styles.multiline]}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="What is this group about? (optional)"
-          placeholderTextColor="#888"
-          maxLength={MAX_DESCRIPTION_LENGTH}
-          multiline
-        />
-        <ThemedText style={styles.counter}>
-          {description.length}/{MAX_DESCRIPTION_LENGTH}
-        </ThemedText>
-
-        <ThemedText style={styles.label}>Invite friends</ThemedText>
-
-        {/* Valda vänner. Tryck på en för att ta bort hen. */}
-        {selected.length > 0 && (
-          <View style={styles.chips}>
-            {selected.map((friend) => (
-              <Pressable
-                key={friend.id}
-                style={styles.chip}
-                onPress={() => removeFriend(friend.id)}
-                accessibilityLabel={`Remove ${friend.display_name ?? 'friend'}`}
-              >
-                <ThemedText style={styles.chipText}>{friend.display_name ?? 'Unknown'}</ThemedText>
-                <Ionicons name="close" size={14} color="#fff" />
-              </Pressable>
-            ))}
+          <View>
+            <ThemedText style={Typography.pageTitle}>Add group</ThemedText>
+            <ThemedText style={[styles.subtitle, { color: theme.textSecondary }]}>
+              And have a Larp-off
+            </ThemedText>
           </View>
-        )}
 
-        <TextInput
-          style={inputStyle}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search friends"
-          placeholderTextColor="#888"
-          autoCorrect={false}
-        />
+          <GroupImagePicker uri={coverImage?.uri ?? null} onPress={handlePickImage} />
 
-        {loadingFriends ? (
-          <ActivityIndicator style={styles.spacing} />
-        ) : friends.length === 0 ? (
-          <ThemedText style={styles.dim}>You have no friends to invite yet.</ThemedText>
-        ) : (
-          results.map((friend) => (
-            <Pressable key={friend.id} style={styles.friendRow} onPress={() => addFriend(friend)}>
-              {friend.avatar_url ? (
-                <Image source={{ uri: friend.avatar_url }} style={styles.friendAvatar} />
-              ) : (
-                <View style={[styles.friendAvatar, styles.avatarPlaceholder]} />
-              )}
-              <ThemedText style={styles.friendName}>{friend.display_name ?? 'Unknown'}</ThemedText>
-              <Ionicons name="add-circle-outline" size={24} color="#1DB954" />
-            </Pressable>
-          ))
-        )}
+          <GroupFields
+            name={name}
+            onChangeName={setName}
+            description={description}
+            onChangeDescription={setDescription}
+          />
 
-        {errorMessage && <ThemedText style={styles.error}>{errorMessage}</ThemedText>}
-
-        <Pressable
-          style={[styles.button, !canCreate && styles.buttonDisabled]}
-          onPress={handleCreate}
-          disabled={!canCreate}
-        >
-          <ThemedText style={styles.buttonText}>
-            {creating ? 'Creating...' : 'Create group'}
+          <ThemedText style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+            Invite friends{selectedIds.size > 0 ? ` · ${selectedIds.size} selected` : ''}
           </ThemedText>
-        </Pressable>
-      </ScrollView>
+
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search friends"
+            autoCapitalize="none"
+            button={
+              search.length > 0
+                ? { icon: 'close', onPress: () => setSearch(''), accessibilityLabel: 'Clear search' }
+                : undefined
+            }
+          />
+
+          {loadingFriends ? (
+            <ActivityIndicator style={styles.spinner} />
+          ) : friends.length === 0 ? (
+            <ThemedText style={{ color: theme.textSecondary }}>
+              You have no friends to invite yet. You can add people later.
+            </ThemedText>
+          ) : visibleFriends.length === 0 ? (
+            <ThemedText style={{ color: theme.textSecondary }}>
+              No friends match "{search.trim()}".
+            </ThemedText>
+          ) : (
+            visibleFriends.map((friend) => {
+              const selected = selectedIds.has(friend.friend_id);
+              const friendName = friend.display_name ?? 'Unknown';
+
+              return (
+                <Pressable
+                  key={friend.friend_id}
+                  style={styles.friendRow}
+                  onPress={() => toggleFriend(friend.friend_id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={selected ? `Remove ${friendName} from invites` : `Invite ${friendName}`}
+                >
+                  {friend.avatar_url ? (
+                    <Image source={{ uri: friend.avatar_url }} style={styles.avatar} />
+                  ) : (
+                    <View style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]} />
+                  )}
+                  <ThemedText style={styles.friendName} numberOfLines={1}>
+                    {friendName}
+                  </ThemedText>
+                  <View
+                    style={[
+                      styles.circle,
+                      { backgroundColor: selected ? theme.backgroundSelected : theme.accentIndigo },
+                    ]}
+                  >
+                    <SymbolView
+                      name={selected ? 'checkmark' : 'plus'}
+                      size={14}
+                      weight="bold"
+                      tintColor={selected ? theme.textSecondary : theme.accentText}
+                      fallback={
+                        <Ionicons
+                          name={selected ? 'checkmark' : 'add'}
+                          size={18}
+                          color={selected ? theme.textSecondary : theme.accentText}
+                        />
+                      }
+                    />
+                  </View>
+                </Pressable>
+              );
+            })
+          )}
+
+          {errorMessage && (
+            <ThemedText style={{ color: theme.destructiveText }}>{errorMessage}</ThemedText>
+          )}
+
+          <ActionButton
+            label={creating ? 'Creating...' : 'Confirm'}
+            icon="checkmark"
+            size="large"
+            color="indigo"
+            disabled={!canCreate}
+            onPress={handleCreate}
+            style={styles.confirm}
+          />
+        </ScrollView>
+      </SafeAreaView>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: 24, gap: 12, paddingBottom: 48 },
-  avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    opacity: 0.6,
-  },
-  label: { fontWeight: '600', marginTop: 8 },
-  input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 17, opacity: 0.9 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#1DB954',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  chipText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  friendRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
-  friendAvatar: { width: 36, height: 36, borderRadius: 18 },
-  avatarPlaceholder: { backgroundColor: '#ccc' },
-  friendName: { flex: 1 },
-  dim: { opacity: 0.6 },
-  spacing: { marginVertical: 12 },
-  error: { color: '#c0392b' },
-  button: { backgroundColor: '#1DB954', paddingVertical: 14, borderRadius: 999, alignItems: 'center', marginTop: 16 },
-  buttonDisabled: { opacity: 0.4 },
-  buttonText: { color: '#fff', fontWeight: '600' },
-  avatarSelected: { borderWidth: 0, opacity: 1 },
-  avatarImage: { width: '100%', height: '100%', borderRadius: 48 },
-  multiline: { minHeight: 80, textAlignVertical: 'top' },
-  counter: { fontSize: 12, opacity: 0.5, alignSelf: 'flex-end' },
+  content: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
+  subtitle: { fontSize: 18, lineHeight: 24 },
+  sectionTitle: { fontSize: 14, fontWeight: '600', marginTop: Spacing.two },
+  spinner: { marginTop: Spacing.three },
+  friendRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingVertical: Spacing.two },
+  avatar: { width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2 },
+  friendName: { flex: 1, fontSize: 16 },
+  circle: { width: CIRCLE, height: CIRCLE, borderRadius: CIRCLE / 2, alignItems: 'center', justifyContent: 'center' },
+  confirm: { alignSelf: 'center', marginTop: Spacing.three },
 });
