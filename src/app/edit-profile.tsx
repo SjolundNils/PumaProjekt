@@ -26,6 +26,7 @@ import {
   Alert,
   ColorValue,
   Image,
+  KeyboardAvoidingView,
   Platform,
   PlatformColor,
   Pressable,
@@ -369,25 +370,16 @@ export default function EditProfileScreen() {
     return (
          <SafeAreaView style={styles.screen} edges={['bottom']}>
 
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1, width: '100%' }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+          >
+
         <Text style={styles.title}>Välj album för plats {editAlbumIndex}</Text>
-        <ScrollView contentContainerStyle={styles.contentAlbumSearch}>
-           <GlassContainer spacing={8} style={styles.searchRow}>
-              <GlassView style={[styles.searchField, !glassSupported && styles.fallback]} glassEffectStyle="regular">
-                <Ionicons name="search" size={18} color={theme.text}/>
-                <ThemedTextInput
-                  style={[styles.searchInput]}
-                  value={albumQuery}
-                  onChangeText={searchAlbum}
-                  placeholder="Search for a album"
-                  placeholderTextColor="#888"
-                  returnKeyType="search"
-                  autoCorrect={false}
-                  clearButtonMode="while-editing"
-                />
-              </GlassView>
-            </GlassContainer>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.contentAlbumSearch}  >
           <TouchableOpacity onPress={() => setEditAlbumIndex(null)}>
-            <ThemedText style={styles.label}>← Tillbaka</ThemedText>
+            <ThemedText style={styles.label}>← Back</ThemedText>
           </TouchableOpacity>
 
           {spotifyAlbumSearchResult.map((item) => (
@@ -413,6 +405,22 @@ export default function EditProfileScreen() {
             </Pressable>
           ))}
         </ScrollView>
+        <GlassContainer spacing={8} style={styles.searchRow}>
+              <GlassView style={[styles.searchField, !glassSupported && styles.fallback]} glassEffectStyle="regular">
+                <Ionicons name="search" size={18} color={colors.secondaryLabel as any} />
+                <ThemedTextInput
+                  style={[styles.searchInput]}
+                  value={albumQuery}
+                  onChangeText={searchAlbum}
+                  placeholder="Search for a album"
+                  placeholderTextColor={colors.secondaryLabel as any}
+                  returnKeyType="search"
+                  autoCorrect={false}
+                  clearButtonMode="while-editing"
+                />
+              </GlassView>
+            </GlassContainer>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -508,13 +516,13 @@ const styles = StyleSheet.create({
   screen: { flex: 1, },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content: { padding: 16, gap: 8 },
-  contentAlbumSearch: { padding: 16 },
+  contentAlbumSearch: { padding: 16},
   title: { fontSize: 24, fontWeight: '700', marginBottom: 8 },
   avatar: { width: 80, height: 80, borderRadius: 40, marginBottom: 8 },
   label: { fontSize: 14, fontWeight: '600', marginTop: 8 },
   spotifyNameLabel: { fontSize: 14, fontWeight: '600', marginTop: 0, marginBottom: 8 },
   input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
-  searchInput: { paddingHorizontal: 12, paddingVertical: 0, fontSize: 17, flex: 1 },
+  searchInput: { marginHorizontal: 0, paddingHorizontal: 0, paddingVertical: 0, fontSize: 15, flex: 1 },
   addAlbumNameText: { borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0, fontSize: 18 },
   addAlbumArtistNameText: { borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0, fontSize: 16 },
   addAlbumImage: { paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, marginHorizontal: -16 },
@@ -569,5 +577,5 @@ const styles = StyleSheet.create({
     searchButtonInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     fallback: { borderWidth: StyleSheet.hairlineWidth },
     searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  searchField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: SEARCH_BAR_HEIGHT, borderRadius: 24, paddingHorizontal: 16 },
+  searchField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: SEARCH_BAR_HEIGHT, borderRadius: 24, paddingHorizontal: 16, marginHorizontal: 30, },
 });
