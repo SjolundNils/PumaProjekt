@@ -17,13 +17,13 @@ import { DailySongProvider } from '@/lib/daily-song-context';
 import { onSessionStatusChange, refreshSessionStatus, SessionStatus } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
 import {
-	DarkTheme,
-	DefaultTheme,
-	router,
-	Stack,
-	ThemeProvider,
-	useRootNavigationState,
-	useSegments,
+  DarkTheme,
+  DefaultTheme,
+  router,
+  Stack,
+  ThemeProvider,
+  useRootNavigationState,
+  useSegments,
 } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
@@ -103,10 +103,10 @@ export default function RootLayout() {
           options={{ headerShown: true, title: '', headerBackTitle: 'Back' }}
         />
 
-        <Stack.Screen
+        {/*<Stack.Screen
             name="edit-profile"
             options={{ headerShown: true, title: 'Edit profile', headerBackTitle: 'Back' }}
-        />
+        />*/}
 
         <Stack.Screen
           name="group/[id]/edit"

@@ -13,6 +13,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedTextInput } from '@/components/themed-text-input';
 import { ThemedTouchableOpacity } from '@/components/themed-touchable-oppacity';
 import { ThemedView } from '@/components/themed-view';
+import { BackButton } from '@/components/ui/back-button';
 import { useTheme } from '@/hooks/use-theme';
 import { getMySpotifyProfile, searchAlbums } from '@/lib/spotifyData';
 import { SpotifyNotConnectedError } from '@/lib/spotifySearch';
@@ -378,9 +379,14 @@ export default function EditProfileScreen() {
 
         <Text style={styles.title}>Välj album för plats {editAlbumIndex}</Text>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.contentAlbumSearch}  >
-          <TouchableOpacity onPress={() => setEditAlbumIndex(null)}>
-            <ThemedText style={styles.label}>← Back</ThemedText>
-          </TouchableOpacity>
+
+          <BackButton onPress={() => {
+               searchAlbum('');
+               setEditAlbumIndex(null);
+          }} />
+          <Text style={[styles.largeTitle, { color: colors.label }]} accessibilityRole="header">
+                            Edit Profile
+          </Text>
 
           {spotifyAlbumSearchResult.map((item) => (
             <Pressable
@@ -438,8 +444,12 @@ export default function EditProfileScreen() {
 
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.screen} edges={['bottom']}>
+      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
+          <BackButton onPress={() => router.back()} />
+          <Text style={[styles.largeTitle, { color: colors.label }]} accessibilityRole="header">
+                            Edit Profile
+          </Text>
 
         <View style={styles.profileImageContainer}>
           {profile.avatar_url && (
@@ -525,6 +535,8 @@ export default function EditProfileScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, },
+  backButton: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
+  largeTitle: { fontSize: 34, fontWeight: '700', letterSpacing: 0.4, paddingHorizontal: 16, marginTop: 8 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content: { padding: 16, gap: 8 },
   contentAlbumSearch: { padding: 16},
