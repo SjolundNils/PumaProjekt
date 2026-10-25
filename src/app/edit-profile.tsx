@@ -407,7 +407,7 @@ export default function EditProfileScreen() {
         </ScrollView>
         <GlassContainer spacing={8} style={styles.searchRow}>
               <GlassView style={[styles.searchField, !glassSupported && styles.fallback]} glassEffectStyle="regular">
-                <Ionicons name="search" size={18} color={colors.secondaryLabel as any} />
+                <Ionicons name="search" size={18} style={{ marginLeft: 15 }} color={colors.secondaryLabel as any} />
                 <ThemedTextInput
                   style={[styles.searchInput]}
                   value={albumQuery}
@@ -419,6 +419,17 @@ export default function EditProfileScreen() {
                   clearButtonMode="while-editing"
                 />
               </GlassView>
+
+             <TouchableOpacity 
+                onPress={() => {
+                  searchAlbum('');
+                  setEditAlbumIndex(null);
+                }}
+              >
+                <GlassView style={[styles.searchCloseButton, !glassSupported && styles.fallback]} glassEffectStyle="regular">
+                  <Ionicons name="close" size={20} color={colors.label as any} />
+                </GlassView>
+             </TouchableOpacity>
             </GlassContainer>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -576,6 +587,7 @@ const styles = StyleSheet.create({
     searchButton: { width: SEARCH_BAR_HEIGHT, height: SEARCH_BAR_HEIGHT, borderRadius: 24 },
     searchButtonInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     fallback: { borderWidth: StyleSheet.hairlineWidth },
-    searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  searchField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: SEARCH_BAR_HEIGHT, borderRadius: 24, paddingHorizontal: 16, marginHorizontal: 30, },
+    searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginHorizontal: 0,  },
+  searchField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: SEARCH_BAR_HEIGHT, borderRadius: 24},
+  searchCloseButton: { width: SEARCH_BAR_HEIGHT, height: SEARCH_BAR_HEIGHT, borderRadius: SEARCH_BAR_HEIGHT/2, alignItems: 'center', justifyContent: 'center' },
 });
