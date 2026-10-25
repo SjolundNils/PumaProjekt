@@ -385,8 +385,21 @@ export default function EditProfileScreen() {
                setEditAlbumIndex(null);
           }} />
           <Text style={[styles.largeTitle, { color: colors.label }]} accessibilityRole="header">
-                            Edit Profile
+                            Add favorite album
           </Text>
+          <Text style={[styles.subtitle, { color: colors.secondaryLabel }]}>
+            Add your favorite albums to your profile. You can choose up to 6 albums.
+          </Text>
+
+          <Text style={[styles.sectionTitle, { color: colors.label }]} accessibilityRole="header">
+            Search Results
+          </Text>
+
+          {spotifyAlbumSearchResult.length === 0 && (
+            <Text style={[styles.subtitle, { color: colors.secondaryLabel }]}>
+              Search for a song to see results.
+            </Text>
+          )}
 
           {spotifyAlbumSearchResult.map((item) => (
             <Pressable
@@ -537,6 +550,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, },
   backButton: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
   largeTitle: { fontSize: 34, fontWeight: '700', letterSpacing: 0.4, paddingHorizontal: 16, marginTop: 8 },
+  subtitle: { fontSize: 15, lineHeight: 20, paddingHorizontal: 16, marginTop: 4 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content: { padding: 16, gap: 8 },
   contentAlbumSearch: { padding: 16},
@@ -548,12 +562,12 @@ const styles = StyleSheet.create({
   searchInput: { marginHorizontal: 0, paddingHorizontal: 0, paddingVertical: 0, fontSize: 15, flex: 1 },
   addAlbumNameText: { borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0, fontSize: 18 },
   addAlbumArtistNameText: { borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0, fontSize: 16 },
-  addAlbumImage: { paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, marginHorizontal: -16 },
+  addAlbumImage: { paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, marginHorizontal: 0 },
   multiline: { minHeight: 80, textAlignVertical: 'top', borderWidth: 1 },
   displayNameStyle: { borderWidth: 1 },
   button: { backgroundColor: '#1DB954', borderRadius: 8, paddingVertical: 12, alignItems: 'center', marginTop: 8 },
   buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', marginTop: 24 },
+sectionTitle: { fontSize: 22, fontWeight: '700', letterSpacing: 0.35, paddingHorizontal: 16, marginTop: 28, marginBottom: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   slot: { width: '30%' },
   albumCover: { width: '100%', aspectRatio: 1, borderRadius: 6 },
@@ -600,6 +614,6 @@ const styles = StyleSheet.create({
     searchButtonInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     fallback: { borderWidth: StyleSheet.hairlineWidth },
     searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginHorizontal: 0,  },
-  searchField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: SEARCH_BAR_HEIGHT, borderRadius: 24},
+  searchField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: SEARCH_BAR_HEIGHT, borderRadius: 24, paddingRight: 15},
   searchCloseButton: { width: SEARCH_BAR_HEIGHT, height: SEARCH_BAR_HEIGHT, borderRadius: SEARCH_BAR_HEIGHT/2, alignItems: 'center', justifyContent: 'center' },
 });
