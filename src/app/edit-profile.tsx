@@ -13,11 +13,12 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedTextInput } from '@/components/themed-text-input';
 import { ThemedTouchableOpacity } from '@/components/themed-touchable-oppacity';
 import { ThemedView } from '@/components/themed-view';
-import { BackButton } from '@/components/ui/back-button';
 import { useTheme } from '@/hooks/use-theme';
 import { getMySpotifyProfile, searchAlbums } from '@/lib/spotifyData';
 import { SpotifyNotConnectedError } from '@/lib/spotifySearch';
 import { supabase } from '@/lib/supabase';
+import { ComponentSize, Radius, Spacing, Typography } from '@/constants/theme';
+import { createTextStyles } from '@/styles/text';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassContainer, GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { router, useFocusEffect } from 'expo-router';
@@ -29,7 +30,6 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  PlatformColor,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -102,32 +102,17 @@ type Colors = {
 function useColors(): Colors {
   const theme = useTheme();
 
-  if (Platform.OS === 'ios') {
-    return {
-      label: PlatformColor('label'),
-      secondaryLabel: PlatformColor('secondaryLabel'),
-      placeholder: PlatformColor('placeholderText'),
-      separator: PlatformColor('separator'),
-      highlight: PlatformColor('systemGray5'),
-      fill: PlatformColor('tertiarySystemFill'),
-      popup: PlatformColor('secondarySystemGroupedBackground'),
-      tint: PlatformColor('systemIndigo'),
-      onTint: '#fff',
-      red: PlatformColor('systemRed'),
-    };
-  }
-
   return {
     label: theme.text,
-    secondaryLabel: '#8e8e93',
-    placeholder: '#8e8e93',
-    separator: 'rgba(128,128,128,0.3)',
+    secondaryLabel: theme.textSecondary,
+    placeholder: theme.textSecondary,
+    separator: theme.backgroundSelected,
     highlight: theme.backgroundSelected,
     fill: theme.backgroundElement,
     popup: theme.background,
-    tint: '#0a84ff',
-    onTint: '#fff',
-    red: '#ff3b30',
+    tint: theme.accentIndigo,
+    onTint: theme.accentText,
+    red: theme.destructiveText,
   };
 }
 
@@ -147,6 +132,7 @@ export default function EditProfileScreen() {
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
   const theme = useTheme();
   const colors = useColors();
+  const textStyles = createTextStyles(theme);
 
   /**
    * Hämtar profilen och favoritalbumen för den inloggade användaren.
@@ -377,26 +363,22 @@ export default function EditProfileScreen() {
             keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
           >
 
-        <Text style={styles.title}>Välj album för plats {editAlbumIndex}</Text>
+        <Text style={[styles.title, { color: theme.text }]}>Välj album för plats {editAlbumIndex}</Text>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.contentAlbumSearch}  >
 
-          <BackButton onPress={() => {
-               searchAlbum('');
-               setEditAlbumIndex(null);
-          }} />
-          <Text style={[styles.largeTitle, { color: colors.label }]} accessibilityRole="header">
-                            Add favorite album
+          <Text style={[textStyles.pageTitle, styles.largeTitle]} accessibilityRole="header">
+            Add favorite album
           </Text>
-          <Text style={[styles.subtitle, { color: colors.secondaryLabel }]}>
+          <Text style={[textStyles.pageSubtitle, styles.subtitle]}>
             Add your favorite albums to your profile. You can choose up to 6 albums.
           </Text>
 
-          <Text style={[styles.sectionTitle, { color: colors.label }]} accessibilityRole="header">
+          <Text style={[textStyles.sectionTitle, styles.sectionTitle]} accessibilityRole="header">
             Search Results
           </Text>
 
           {spotifyAlbumSearchResult.length === 0 && (
-            <Text style={[styles.subtitle, { color: colors.secondaryLabel }]}>
+            <Text style={[textStyles.pageSubtitle, styles.subtitle]}>
               Search for a song to see results.
             </Text>
           )}
@@ -414,7 +396,7 @@ export default function EditProfileScreen() {
               {item.image_url && (
                 <Image
                   source={{ uri: item.image_url }}
-                  style={{ width: 48, height: 48, borderRadius: 4 }}
+                  style={{ width: 48, height: 48 }}
                 />
               )}
               <View>
@@ -426,7 +408,7 @@ export default function EditProfileScreen() {
         </ScrollView>
         <GlassContainer spacing={8} style={styles.searchRow}>
               <GlassView style={[styles.searchField, !glassSupported && styles.fallback]} glassEffectStyle="regular">
-                <Ionicons name="search" size={18} style={{ marginLeft: 15 }} color={colors.secondaryLabel as any} />
+                <Ionicons name="search" size={18} color={colors.secondaryLabel as any} />
                 <ThemedTextInput
                   style={[styles.searchInput]}
                   value={albumQuery}
@@ -457,11 +439,10 @@ export default function EditProfileScreen() {
 
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.screen} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
-          <BackButton onPress={() => router.back()} />
-          <Text style={[styles.largeTitle, { color: colors.label }]} accessibilityRole="header">
-                            Edit Profile
+          <Text style={[textStyles.pageTitle, styles.largeTitle]} accessibilityRole="header">
+            Edit Profile
           </Text>
 
         <View style={styles.profileImageContainer}>
@@ -470,7 +451,11 @@ export default function EditProfileScreen() {
           )}
           <ThemedText style={styles.spotifyNameLabel}>{spotifyProfile?.user_name ? '@' + spotifyProfile.user_name : 'Inget namn angivet'}</ThemedText>
           <Pressable
-            style={[styles.avatarButton, updatingAvatar && styles.avatarButtonDisabled]}
+            style={[
+              styles.avatarButton,
+              { borderColor: theme.backgroundSelected },
+              updatingAvatar && styles.avatarButtonDisabled,
+            ]}
             onPress={updateAvatarFromSpotify}
             disabled={updatingAvatar}
           >
@@ -479,24 +464,24 @@ export default function EditProfileScreen() {
             </ThemedText>
           </Pressable>
         </View>
-          <ThemedText style={styles.label}>Display Name</ThemedText>
+          <ThemedText style={[styles.label, { color: theme.textSecondary }]}>Display Name</ThemedText>
           <ThemedTextInput
-            style={[styles.displayNameStyle]}
+            style={[styles.displayNameStyle, { borderColor: theme.backgroundSelected, backgroundColor: theme.backgroundElement }]}
             value={displayName}
             onChangeText={setDisplayName}
             placeholder="Ditt namn"
           />
 
-          <ThemedText style={styles.label}>Biography</ThemedText>
+          <ThemedText style={[styles.label, { color: theme.textSecondary }]}>Biography</ThemedText>
           <ThemedTextInput
-            style={[styles.multiline]}
+            style={[styles.multiline, { borderColor: theme.backgroundSelected, backgroundColor: theme.backgroundElement }]}
             value={biography}
             onChangeText={setBiography}
             placeholder="Berätta något om dig själv"
             multiline
           />
 
-          <ThemedText style={styles.sectionTitle}>Favorite albums</ThemedText>
+          <ThemedText style={[textStyles.sectionTitle, styles.sectionTitle]}>Favorite albums</ThemedText>
           <View style={styles.grid}>
             {slots.map((album, index) => (
               <View key={index} style={styles.slot}>
@@ -508,8 +493,8 @@ export default function EditProfileScreen() {
                   {album?.image_url ? (
                     <Image source={{ uri: album.image_url }} style={styles.albumCover} />
                   ) : (
-                    <View style={[styles.albumCover, styles.emptyCover]}>
-                      <ThemedText style={styles.emptyText}>{index + 1}</ThemedText>
+                    <View style={[styles.albumCover, styles.emptyCover, { backgroundColor: theme.backgroundElement }]}>
+                      <ThemedText style={[styles.emptyText, { color: theme.textSecondary }]}>{index + 1}</ThemedText>
                     </View>
                   )}
                   </TouchableOpacity>
@@ -528,7 +513,7 @@ export default function EditProfileScreen() {
                   {album?.album_name ?? 'Empty slot'}
                 </ThemedText>
                 {album && (
-                  <ThemedText style={styles.albumArtist} numberOfLines={1}>
+                  <ThemedText style={[styles.albumArtist, { color: theme.textSecondary }]} numberOfLines={1}>
                     {album.artist_name}
                   </ThemedText>
                 )}
@@ -536,8 +521,14 @@ export default function EditProfileScreen() {
            ))}
           </View>
 
-          <Pressable style={styles.button} onPress={handleSave} disabled={saving}>
-            <ThemedText style={styles.buttonText}>{saving ? 'Saving...' : 'Save changes'}</ThemedText>
+          <Pressable
+            style={[styles.button, { backgroundColor: theme.accentIndigo }]}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            <ThemedText style={[styles.buttonText, { color: theme.accentText }]}>
+              {saving ? 'Saving...' : 'Save changes'}
+            </ThemedText>
           </Pressable>
 
         </ScrollView>
@@ -547,73 +538,72 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, },
-  backButton: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
-  largeTitle: { fontSize: 34, fontWeight: '700', letterSpacing: 0.4, paddingHorizontal: 16, marginTop: 8 },
-  subtitle: { fontSize: 15, lineHeight: 20, paddingHorizontal: 16, marginTop: 4 },
+  screen: { flex: 1 },
+  backButton: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.four },
+  largeTitle: { marginBottom: Spacing.two },
+  subtitle: { marginTop: Spacing.one },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { padding: 16, gap: 8 },
-  contentAlbumSearch: { padding: 16},
-  title: { fontSize: 24, fontWeight: '700', marginBottom: 8 },
-  avatar: { width: 80, height: 80, borderRadius: 40, marginBottom: 8 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 8 },
-  spotifyNameLabel: { fontSize: 14, fontWeight: '600', marginTop: 0, marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
-  searchInput: { marginHorizontal: 0, paddingHorizontal: 0, paddingVertical: 0, fontSize: 15, flex: 1 },
-  addAlbumNameText: { borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0, fontSize: 18 },
-  addAlbumArtistNameText: { borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0, fontSize: 16 },
-  addAlbumImage: { paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, marginHorizontal: 0 },
+  content: { paddingHorizontal: Spacing.three, paddingTop: Spacing.seven, paddingBottom: Spacing.six, gap: Spacing.three },
+  contentAlbumSearch: { paddingHorizontal: Spacing.three, paddingTop: Spacing.seven, paddingBottom: Spacing.six },
+  title: { ...Typography.sectionTitle, marginBottom: Spacing.two },
+  avatar: { width: 80, height: 80, borderRadius: Radius.large, marginBottom: Spacing.two },
+  label: { ...Typography.bodySmall, fontWeight: '600', marginTop: Spacing.two },
+  spotifyNameLabel: { ...Typography.bodySmall, marginBottom: Spacing.two },
+  input: { borderWidth: 1, borderRadius: Radius.small, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, fontSize: 16 },
+  searchInput: { marginHorizontal: 0, paddingHorizontal: 0, paddingVertical: 0, ...Typography.bodySmall, flex: 1 },
+  addAlbumNameText: { borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0, ...Typography.body },
+  addAlbumArtistNameText: { borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0, ...Typography.bodySmall },
+  addAlbumImage: { paddingVertical: Spacing.two, flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingHorizontal: 0, marginHorizontal: 0 },
   multiline: { minHeight: 80, textAlignVertical: 'top', borderWidth: 1 },
   displayNameStyle: { borderWidth: 1 },
-  button: { backgroundColor: '#1DB954', borderRadius: 8, paddingVertical: 12, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-sectionTitle: { fontSize: 22, fontWeight: '700', letterSpacing: 0.35, paddingHorizontal: 16, marginTop: 28, marginBottom: 10 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  button: { borderRadius: Radius.pill, paddingVertical: Spacing.two, alignItems: 'center', marginTop: Spacing.two },
+  buttonText: { fontWeight: '600', ...Typography.body },
+  sectionTitle: { marginTop: Spacing.two, marginBottom: Spacing.one },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three },
   slot: { width: '30%' },
-  albumCover: { width: '100%', aspectRatio: 1, borderRadius: 6 },
-  emptyCover: { backgroundColor: 'rgba(128, 128, 128, 0.15)', justifyContent: 'center', alignItems: 'center' },
-  emptyText: { fontSize: 20, color: '#999' },
-  albumName: { fontSize: 13, fontWeight: '600', marginTop: 4 },
-  albumArtist: { fontSize: 12, color: '#666' },
-  profileImageContainer: { width: '100%', alignItems: 'center', marginTop: 8, marginBottom: 4 },
+  albumCover: { width: '100%', aspectRatio: 1 },
+  emptyCover: { justifyContent: 'center', alignItems: 'center' },
+  emptyText: { ...Typography.body, textAlign: 'center' },
+  albumName: { ...Typography.bodySmall, fontWeight: '600', marginTop: Spacing.one },
+  albumArtist: { ...Typography.caption, marginTop: Spacing.half },
+  profileImageContainer: { width: '100%', alignItems: 'flex-start', marginTop: Spacing.one, marginBottom: Spacing.two },
 
   // Senaste låtar
-  songRow: {flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8},
-  songCover: {width: 50, height: 50, borderRadius: 4},
-  songName: {fontSize: 15, fontWeight: '600'},
-  songArtist: {fontSize: 13, color: '#666'},
+  songRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, marginBottom: Spacing.two },
+  songCover: { width: 50, height: 50 },
+  songName: { ...Typography.bodySmall, fontWeight: '600' },
+  songArtist: { ...Typography.caption },
 
-    avatarButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999, // Fullt rundade kortsidor ger pillformen
+  avatarButton: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Radius.pill,
     borderWidth: 1,
-    borderColor: 'rgba(128, 128, 128, 0.5)',
   },
   avatarButtonDisabled: { opacity: 0.5 },
-  avatarButtonText: { fontSize: 14, fontWeight: '600' },
+  avatarButtonText: { ...Typography.bodySmall, fontWeight: '600' },
 
   removeButton: {
     position: 'absolute',
     top: '50%',
     left: '50%',
-    width: 32,
-    height: 32,
+    width: ComponentSize.avatar.default,
+    height: ComponentSize.avatar.default,
     marginTop: -16,
-    marginLeft: -16,
-    borderRadius: 20,
+    marginLeft: -20,
+    borderRadius: Radius.large,
     alignItems: 'center',
     justifyContent: 'center',
   },
   removeButtonText: {
-    fontSize: 16,
+    ...Typography.body,
     fontWeight: 'bold',
   },
 
-    searchButton: { width: SEARCH_BAR_HEIGHT, height: SEARCH_BAR_HEIGHT, borderRadius: 24 },
+    searchButton: { width: SEARCH_BAR_HEIGHT, height: SEARCH_BAR_HEIGHT, borderRadius: Radius.large },
     searchButtonInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     fallback: { borderWidth: StyleSheet.hairlineWidth },
-    searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, marginHorizontal: 0,  },
-  searchField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: SEARCH_BAR_HEIGHT, borderRadius: 24, paddingRight: 15},
+    searchRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: 0, marginHorizontal: 0 },
+  searchField: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, height: SEARCH_BAR_HEIGHT, borderRadius: Radius.large, paddingHorizontal: Spacing.three },
   searchCloseButton: { width: SEARCH_BAR_HEIGHT, height: SEARCH_BAR_HEIGHT, borderRadius: SEARCH_BAR_HEIGHT/2, alignItems: 'center', justifyContent: 'center' },
 });

@@ -1,6 +1,7 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { supabase } from '@/lib/supabase';
+import { Spacing } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassContainer, GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { router } from 'expo-router';
@@ -69,7 +70,7 @@ export default function AddFriendsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={22} />
           <ThemedText>Back</ThemedText>
@@ -85,6 +86,7 @@ export default function AddFriendsScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <FlatList
+            style={{ paddingTop: Spacing.seven }}
             data={profiles}
             keyExtractor={(profile) => profile.id}
             contentContainerStyle={{ paddingBottom: 80 + insets.bottom }}

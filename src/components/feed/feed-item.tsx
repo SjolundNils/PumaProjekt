@@ -379,7 +379,7 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
       gap: Spacing.two,
       padding: Spacing.two,
       backgroundColor: theme.background,
-      borderRadius: Radius.medium,
+      borderRadius: Radius.small,
     },
     contentText: { flex: 1 },
     groupIcon: {
@@ -393,7 +393,6 @@ function createStyles(theme: ReturnType<typeof useTheme>) {
     cover: {
       width: ComponentSize.cover,
       height: ComponentSize.cover,
-      borderRadius: Radius.small,
     },
   });
 }

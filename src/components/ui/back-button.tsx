@@ -1,13 +1,19 @@
 import { useTheme } from '@/hooks/use-theme';
 import { Ionicons } from '@expo/vector-icons';
+import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
 type Props = {
   onPress: () => void;
   accessibilityLabel?: string;
+  icon?: ComponentProps<typeof Ionicons>['name'];
 };
 
-export function BackButton({ onPress, accessibilityLabel = 'Go back' }: Props) {
+export function BackButton({
+  onPress,
+  accessibilityLabel = 'Go back',
+  icon = 'chevron-back',
+}: Props) {
   const theme = useTheme();
 
   return (
@@ -25,7 +31,7 @@ export function BackButton({ onPress, accessibilityLabel = 'Go back' }: Props) {
         },
       ]}
     >
-      <Ionicons name="chevron-back" size={22} color={theme.text} />
+      <Ionicons name={icon} size={22} color={theme.text} />
     </Pressable>
   );
 }

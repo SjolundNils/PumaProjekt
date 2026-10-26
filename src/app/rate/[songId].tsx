@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, gap: 20, alignItems: 'center' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   songRow: { flexDirection: 'row', alignItems: 'center', gap: 14, alignSelf: 'stretch' },
-  cover: { width: 64, height: 64, borderRadius: 6 },
+  cover: { width: 64, height: 64 },
   songText: { flex: 1, gap: 2 },
   dim: { opacity: 0.6 },
   button: { backgroundColor: '#6155F5', paddingVertical: 14, borderRadius: 999, alignSelf: 'stretch', alignItems: 'center' },

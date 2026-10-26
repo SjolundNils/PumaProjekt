@@ -29,7 +29,6 @@ import { GroupImagePicker } from '@/components/groups/group-image-picker';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
-import { BackButton } from '@/components/ui/back-button';
 import { Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getErrorMessage } from '@/lib/errors';
@@ -175,9 +174,8 @@ export default function EditGroupScreen() {
   if (!isOwner) {
     return (
       <ThemedView style={styles.screen}>
-        <SafeAreaView style={styles.screen} edges={['top']}>
+        <SafeAreaView style={styles.screen} edges={['bottom']}>
           <View style={styles.content}>
-            <BackButton onPress={goBack} />
             <ThemedText style={{ color: theme.textSecondary }}>
               {errorMessage ?? 'Only the group owner can edit this group.'}
             </ThemedText>
@@ -191,7 +189,7 @@ export default function EditGroupScreen() {
 
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.screen} edges={['top']}>
+      <SafeAreaView style={styles.screen} edges={['bottom']}>
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
@@ -199,7 +197,6 @@ export default function EditGroupScreen() {
         >
           {/* Bakåt till vänster och Save till höger */}
           <View style={styles.headerRow}>
-            <BackButton onPress={goBack} />
             <ActionButton
               label={saving ? 'Saving...' : 'Save'}
               icon="checkmark"
@@ -252,7 +249,12 @@ export default function EditGroupScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four },
-  content: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
+  content: {
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.seven,
+    gap: Spacing.three,
+    paddingBottom: Spacing.six,
+  },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   subtitle: { fontSize: 18, lineHeight: 24 },
   dangerZone: { marginTop: Spacing.five, alignItems: 'center', gap: Spacing.two },

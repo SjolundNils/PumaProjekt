@@ -39,7 +39,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BackButton } from '@/components/ui/back-button';
 import { SearchBar } from '@/components/ui/search-bar';
 import { Radius, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -323,9 +322,8 @@ export default function GroupMembersScreen() {
   if (!group) {
     return (
       <ThemedView style={styles.screen}>
-        <SafeAreaView style={styles.screen} edges={['top']}>
+        <SafeAreaView style={styles.screen} edges={['bottom']}>
           <View style={styles.content}>
-            <BackButton onPress={goBack} />
             <ThemedText style={{ color: theme.textSecondary }}>
               {errorMessage ?? "You don't have access to this group."}
             </ThemedText>
@@ -339,10 +337,8 @@ export default function GroupMembersScreen() {
 
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.screen} edges={['top']}>
+      <SafeAreaView style={styles.screen} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <BackButton onPress={goBack} />
-
           {/* Gruppens omslag, namn och undertitel */}
           <View style={styles.titleRow}>
             {group.avatar_url ? (
@@ -528,7 +524,12 @@ export default function GroupMembersScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
+  content: {
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.seven,
+    gap: Spacing.three,
+    paddingBottom: Spacing.six,
+  },
 
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   cover: { width: COVER, height: COVER, borderRadius: Radius.small },

@@ -29,7 +29,6 @@ import { GroupImagePicker } from '@/components/groups/group-image-picker';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
-import { BackButton } from '@/components/ui/back-button';
 import { SearchBar } from '@/components/ui/search-bar';
 import { Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -159,14 +158,12 @@ export default function CreateGroupScreen() {
 
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.screen} edges={['top']}>
+      <SafeAreaView style={styles.screen} edges={['bottom']}>
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets
         >
-          <BackButton onPress={goBack} />
-
           <View>
             <ThemedText style={Typography.pageTitle}>Add group</ThemedText>
             <ThemedText style={[styles.subtitle, { color: theme.textSecondary }]}>
@@ -276,7 +273,12 @@ export default function CreateGroupScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: Spacing.three, gap: Spacing.three, paddingBottom: Spacing.six },
+  content: {
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.seven,
+    gap: Spacing.three,
+    paddingBottom: Spacing.six,
+  },
   subtitle: { fontSize: 18, lineHeight: 24 },
   sectionTitle: { fontSize: 14, fontWeight: '600', marginTop: Spacing.two },
   spinner: { marginTop: Spacing.three },

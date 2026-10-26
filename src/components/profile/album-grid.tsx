@@ -101,7 +101,7 @@ export function AlbumGrid({ albums, onPressSlot, onRemove }: Props) {
 const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   slot: { width: '30%' },
-  cover: { width: '100%', aspectRatio: 1, borderRadius: 6 },
+  cover: { width: '100%', aspectRatio: 1 },
   empty: { backgroundColor: 'rgba(128, 128, 128, 0.15)', justifyContent: 'center', alignItems: 'center' },
   removeButton: {
     position: 'absolute',

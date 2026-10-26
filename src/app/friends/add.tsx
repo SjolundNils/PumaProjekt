@@ -1,8 +1,8 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
-import { BackButton } from '@/components/ui/back-button';
 import { SearchBar } from '@/components/ui/search-bar';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   acceptRequest,
@@ -16,7 +16,6 @@ import {
 import { openUserProfile } from '@/lib/profile';
 import { createFriendsStyles } from '@/styles/friends';
 import { createTextStyles } from '@/styles/text';
-import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
@@ -125,8 +124,7 @@ export default function AddFriendsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-    <SafeAreaView style={[styles.safeArea, styles.safeAreaWithHeaderSpacing]}>
-      <BackButton onPress={() => router.back()} />
+    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
 
       <Text style={[textStyles.pageTitle, styles.title]}>Add friends</Text>
       <Text style={textStyles.pageSubtitle}>Search for likeminded</Text>
@@ -243,8 +241,7 @@ function ProfileRow({
 function createAddFriendsStyles(theme: ReturnType<typeof useTheme>) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background },
-  safeArea: { flex: 1, paddingHorizontal: 16 },
-  safeAreaWithHeaderSpacing: { paddingTop: 8 },
+  safeArea: { flex: 1, paddingHorizontal: 16, paddingTop: Spacing.seven },
   title: { marginTop: 16 },
   search: { marginTop: 24, marginBottom: 12 },
   empty: { paddingVertical: 12 },

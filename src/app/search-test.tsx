@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
 
 	// Listan
 	row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
-	cover: { width: 48, height: 48, borderRadius: 4 },
+	cover: { width: 48, height: 48 },
 	rowText: { flex: 1 },
 	trackName: { fontSize: 16, fontWeight: '600' },
 	artist: { fontSize: 14, color: '#666' },

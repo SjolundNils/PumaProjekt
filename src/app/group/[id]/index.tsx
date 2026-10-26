@@ -27,9 +27,8 @@ import { RateButton } from '@/components/rating/rate-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
-import { BackButton } from '@/components/ui/back-button';
 import { SpotifyButton } from '@/components/ui/spotify-button';
-import { BottomTabInset, ComponentSize, Radius, Spacing, Typography } from '@/constants/theme';
+import { BottomTabInset, ComponentSize, Spacing, Typography } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getInvitePreview, getInviteState, InviteState } from '@/lib/groupInvites';
 import { fetchAverageRatings, fetchMyRatings } from '@/lib/ratings';
@@ -248,23 +247,10 @@ export default function GroupDetailScreen() {
 
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.screen} edges={['top']}>
+      <SafeAreaView style={styles.screen} edges={['bottom']}>
         <ScrollView
           contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}
         >
-          <View style={styles.headerRow}>
-            <BackButton onPress={goBack} />
-            {isOwner && inviteState === 'member' && (
-              <ActionButton
-                label="Edit group"
-                icon="create-outline"
-                size="medium"
-                color="base"
-                onPress={() => router.push({ pathname: '/group/[id]/edit', params: { id } })}
-              />
-            )}
-          </View>
-
           {group && (
             <>
               {/* Omslag, namn och undertitel */}
@@ -283,6 +269,17 @@ export default function GroupDetailScreen() {
                   </ThemedText>
                 </View>
               </View>
+
+              {isOwner && inviteState === 'member' && (
+                <ActionButton
+                  label="Edit group"
+                  icon="create-outline"
+                  size="medium"
+                  color="base"
+                  onPress={() => router.push({ pathname: '/group/[id]/edit', params: { id } })}
+                  style={{ alignSelf: 'flex-start' }}
+                />
+              )}
 
               {group.description ? (
                 <ThemedText style={styles.description}>{group.description}</ThemedText>
@@ -448,15 +445,14 @@ export default function GroupDetailScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four },
-  content: { paddingHorizontal: Spacing.three, paddingTop: Spacing.two, gap: Spacing.three },
+  content: { paddingHorizontal: Spacing.three, paddingTop: Spacing.seven, gap: Spacing.three },
 
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
-  cover: { width: COVER, height: COVER, borderRadius: Radius.small },
+  cover: { width: COVER, height: COVER},
   titleText: { flex: 1 },
   subtitle: { fontSize: 20, lineHeight: 24 },
   description: { fontSize: 14, lineHeight: 17 },
 
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   membersRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three },
   members: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: Spacing.two },
   spotifyLink: { alignSelf: 'flex-end' },

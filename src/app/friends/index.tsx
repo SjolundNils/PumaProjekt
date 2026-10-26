@@ -8,15 +8,15 @@
  * redan har hämtat. Sökning bland alla användare görs på add-sidan.
  */
 import { ActionButton } from '@/components/ui/action-button';
-import { BackButton } from '@/components/ui/back-button';
 import { SearchBar } from '@/components/ui/search-bar';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { Friendship, getFriends, removeFriendship } from '@/lib/friends';
 import { openUserProfile } from '@/lib/profile';
 import { createFriendsStyles } from '@/styles/friends';
 import { createTextStyles } from '@/styles/text';
 import { Ionicons } from '@expo/vector-icons';
-import { router, Stack, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -28,10 +28,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function FriendsScreen() {
-  const insets = useSafeAreaInsets();
   const theme = useTheme();
   const styles = createFriendsStyles(theme);
   const textStyles = createTextStyles(theme);
@@ -94,18 +92,8 @@ export default function FriendsScreen() {
     }
   }
 
-  function goBack() {
-    if (router.canGoBack()) router.back();
-    else router.replace('/');
-  }
-
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + 8 }]}>
-      {/* Egen header i designen, så den inbyggda döljs */}
-      <Stack.Screen options={{ headerShown: false }} />
-
-      <BackButton onPress={goBack} />
-
+    <View style={[styles.screen, { paddingTop: Spacing.seven }]}>
       <View style={styles.titleRow}>
         <View>
           <Text style={textStyles.pageTitle}>Friends</Text>

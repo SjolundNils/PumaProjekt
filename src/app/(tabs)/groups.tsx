@@ -266,7 +266,7 @@ export default function GroupsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { paddingHorizontal: Spacing.three, paddingTop: Spacing.six, gap: Spacing.three },
+  content: { paddingHorizontal: Spacing.three, paddingTop: Spacing.seven, gap: Spacing.three },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   tabs: { flexDirection: 'row', justifyContent: 'space-between' },
   tab: { fontSize: 14, fontWeight: '500' },

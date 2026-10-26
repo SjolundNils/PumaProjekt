@@ -106,25 +106,31 @@ export default function RootLayout() {
         <Stack.Screen
           name="create-group"
           options={{
-            headerShown: false,
-            title: 'New group',
-            headerBackTitle: 'Back',
+            headerShown: true,
+            headerTransparent: true,
+            title: '',
           }}
         />
         <Stack.Screen
           name="user/[userId]"
-          options={{ headerShown: true, title: '', headerBackTitle: 'Back' }}
+          options={{ headerShown: true, headerTransparent: true, title: '' }}
         />
 
-        {/*<Stack.Screen
-            name="edit-profile"
-            options={{ headerShown: true, title: 'Edit profile', headerBackTitle: 'Back' }}
-        />*/}
+        <Stack.Screen
+          name="edit-profile"
+          options={{ headerShown: true, headerTransparent: true, title: '' }}
+        />
 
         <Stack.Screen
           name="group/[id]/edit"
-          options={{ headerShown: false, title: 'Edit group', headerBackTitle: 'Back' }}
+          options={{ headerShown: true, headerTransparent: true, title: '' }}
         />
+
+        <Stack.Screen name="friends" options={{ headerShown: true, headerTransparent: true, title: '' }} />
+        <Stack.Screen name="friends/add" options={{ headerShown: true, headerTransparent: true, title: '' }} />
+        <Stack.Screen name="add-friends" options={{ headerShown: true, headerTransparent: true, title: '' }} />
+        <Stack.Screen name="group/[id]" options={{ headerShown: true, headerTransparent: true, title: '' }} />
+        <Stack.Screen name="group/[id]/members" options={{ headerShown: true, headerTransparent: true, title: '' }} />
 
       </Stack>
       </DailySongProvider>

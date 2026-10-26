@@ -556,7 +556,7 @@ function TrackRow({ track, index, onPress }: { track: Song; index: number; onPre
         accessibilityRole="button"
         accessibilityLabel={`Pick ${track.name}`}
       >
-        <Cover uri={track.image_url} size={48} radius={4} colors={colors} />
+        <Cover uri={track.image_url} size={48} radius={0} colors={colors} />
         <View style={styles.rowText}>
           <Text style={[styles.rowTitle, { color: colors.label }]} numberOfLines={1}>{track.name}</Text>
           <Text style={[styles.rowArtist, { color: colors.secondaryLabel }]} numberOfLines={1}>{track.artist_name}</Text>
