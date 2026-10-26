@@ -154,6 +154,9 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
     <ThemedView style={styles.screen}>
       <ScrollView
         ref={scrollRef}
+        // Lägger innehållet under headern på andras profiler, där headern är
+        // genomskinlig. På profilfliken sköter SafeAreaView avståndet.
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[styles.content, { paddingBottom: 32 + bottomInset }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
