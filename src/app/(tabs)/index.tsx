@@ -100,7 +100,7 @@ export default function FeedScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <SectionList
           sections={sections}
           keyExtractor={(event) => event.id.toString()}
@@ -155,7 +155,7 @@ function createFeedStyles(theme: ReturnType<typeof useTheme>) {
     },
     header: {
       gap: Spacing.twoAndHalf,
-      paddingTop: Spacing.seven,
+      paddingTop: Spacing.seven + Spacing.seven,
       paddingBottom: Spacing.two,
     },
     titleGroup: { gap: Spacing.half },

@@ -75,8 +75,21 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
       <DailySongProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          headerBackButtonDisplayMode: 'minimal',
+        }}
+      >
+        <Stack.Screen
+          name="(tabs)"
+          options={{
+            headerShown: true,
+            headerBackVisible: false,
+            headerTransparent: true,
+            title: '',
+          }}
+        />
         <Stack.Screen name="login" />
         <Stack.Screen
           name="rate/[songId]"

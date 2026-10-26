@@ -24,12 +24,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
-import { BottomTabInset, Spacing, Typography } from '@/constants/theme';
+import { BottomTabInset, Spacing } from '@/constants/theme';
 import { useScrollToTopOnTabPress } from '@/hooks/use-scroll-to-top-on-tab-press';
 import { useTheme } from '@/hooks/use-theme';
 import { getErrorMessage } from '@/lib/errors';
 import { acceptInvite, declineInvite, listGroupInvites, type GroupInvite } from '@/lib/groupInvites';
 import { listMyGroups, type MyGroup } from '@/lib/myGroups';
+import { createTextStyles } from '@/styles/text';
 import { SymbolView } from 'expo-symbols';
 
 type Tab = 'groups' | 'invites';
@@ -38,6 +39,7 @@ const COVER = 85;
 
 export default function GroupsScreen() {
   const theme = useTheme();
+  const textStyles = createTextStyles(theme);
 
   const [tab, setTab] = useState<Tab>('groups');
   const [groups, setGroups] = useState<MyGroup[]>([]);
@@ -118,7 +120,7 @@ export default function GroupsScreen() {
 
   return (
     <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.screen} edges={['top']}>
+      <SafeAreaView style={styles.screen} edges={['bottom']}>
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={[styles.content, { paddingBottom: BottomTabInset + Spacing.four }]}
@@ -127,8 +129,8 @@ export default function GroupsScreen() {
           {/* Rubrik och knapp för ny grupp */}
           <View style={styles.titleRow}>
             <View>
-              <ThemedText style={Typography.pageTitle}>Groups</ThemedText>
-              <ThemedText style={[styles.subtitle, { color: theme.textSecondary }]}>
+              <ThemedText style={textStyles.pageTitle}>Groups</ThemedText>
+              <ThemedText style={textStyles.pageSubtitle}>
                 One song goes far
               </ThemedText>
             </View>
@@ -264,9 +266,8 @@ export default function GroupsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { paddingHorizontal: Spacing.three, paddingTop: Spacing.four, gap: Spacing.three },
+  content: { paddingHorizontal: Spacing.three, paddingTop: Spacing.six, gap: Spacing.three },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  subtitle: { fontSize: 18, lineHeight: 24 },
   tabs: { flexDirection: 'row', justifyContent: 'space-between' },
   tab: { fontSize: 14, fontWeight: '500' },
   tabActive: { fontWeight: '700' },

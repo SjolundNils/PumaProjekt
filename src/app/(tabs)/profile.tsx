@@ -7,15 +7,14 @@
  * Själva profilen visas av ProfileView (se components/profile/profile-view.tsx).
  */
 
+import { ProfileView } from '@/components/profile/profile-view';
+import { ThemedView } from '@/components/themed-view';
+import { BottomTabInset, Spacing } from '@/constants/theme';
+import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { ProfileView } from '@/components/profile/profile-view';
-import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
 
 export default function ProfileScreen() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -36,11 +35,12 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ThemedView style={styles.screen}>
-      <SafeAreaView style={styles.screen} edges={['top']}>
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.screen} edges={['bottom']}>
         <ProfileView
           userId={userId}
           isOwn
+          topInset={Spacing.six}
           // TILLFÄLLIGT: pekar på testsidan tills edit-profile finns.
           onEditPress={() => router.push('/edit-profile')}
           bottomInset={BottomTabInset}
@@ -51,6 +51,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1 },
   screen: { flex: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 });

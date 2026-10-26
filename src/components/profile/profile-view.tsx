@@ -38,13 +38,16 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
 import { SpotifyButton } from '@/components/ui/spotify-button';
+import { Radius, Spacing } from '@/constants/theme';
 import { useScrollToTopOnTabPress } from '@/hooks/use-scroll-to-top-on-tab-press';
+import { useTheme } from '@/hooks/use-theme';
 import { signOut } from '@/lib/auth';
 import { getErrorMessage } from '@/lib/errors';
 import { fetchProfile, type ProfileData } from '@/lib/profile';
 import { fetchMyRatings } from '@/lib/ratings';
 import { getRecentlyPlayed, RecentTrack } from '@/lib/spotifyData';
 import { spotifyTrackUrl } from '@/lib/spotifyLinks';
+import { createTextStyles } from '@/styles/text';
 
 type Props = {
   /** Användaren vars profil visas. */
@@ -55,9 +58,19 @@ type Props = {
   onEditPress?: () => void;
   /** Extra utrymme längst ner, till exempel för flikraden. */
   bottomInset?: number;
+  /** Extra utrymme ovanför scrollinnehållet. */
+  topInset?: number;
 };
 
-export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 0 }: Props) {
+export function ProfileView({
+  userId,
+  isOwn = false,
+  onEditPress,
+  bottomInset = 0,
+  topInset = 0,
+}: Props) {
+  const theme = useTheme();
+  const textStyles = createTextStyles(theme);
   const [data, setData] = useState<ProfileData | null>(null);
 
   const [myRating, setMyRating] = useState<number | undefined>(undefined);
@@ -122,7 +135,9 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
   if (!data) {
     return (
       <ThemedView style={styles.centered}>
-        <ThemedText style={styles.error}>{errorMessage ?? 'Something went wrong.'}</ThemedText>
+        <ThemedText style={[styles.error, { color: theme.destructiveText }]}>
+          {errorMessage ?? 'Something went wrong.'}
+        </ThemedText>
       </ThemedView>
     );
   }
@@ -154,17 +169,22 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
     <ThemedView style={styles.screen}>
       <ScrollView
         ref={scrollRef}
-        // Lägger innehållet under headern på andras profiler, där headern är
-        // genomskinlig. På profilfliken sköter SafeAreaView avståndet.
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={[styles.content, { paddingBottom: 32 + bottomInset }]}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingBottom: Spacing.five + bottomInset,
+            paddingTop: Spacing.three + topInset,
+          },
+        ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         <View style={styles.header}>
           {profile.avatar_url ? (
             <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
           ) : (
-            <View style={[styles.avatar, styles.placeholder]} />
+            <View
+              style={[styles.avatar, styles.placeholder, { backgroundColor: theme.backgroundElement }]}
+            />
           )}
           <View style={styles.profileActions}>
             <View style={styles.nameBox}>
@@ -198,11 +218,15 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
           )}
         </View>
 
-        {errorMessage && <ThemedText style={styles.error}>{errorMessage}</ThemedText>}
+        {errorMessage && (
+          <ThemedText style={[styles.error, { color: theme.destructiveText }]}>
+            {errorMessage}
+          </ThemedText>
+        )}
 
-        <ThemedText type="default">Today's song</ThemedText>
+        <ThemedText style={textStyles.sectionTitle}>Today's track</ThemedText>
         {todaysSong ? (
-          <View style={styles.songRow}>
+          <View style={[styles.songRow, { backgroundColor: theme.backgroundElement }]}>
             {todaysSong.image_url && (
               <Image source={{ uri: todaysSong.image_url }} style={styles.songCover} />
             )}
@@ -222,11 +246,11 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
           </View>
         ) : (
           <ThemedText style={styles.dim}>
-            {isOwn ? "You haven't picked a song today." : 'No song picked today.'}
+            {isOwn ? "You haven't picked a track today." : 'No track picked today.'}
           </ThemedText>
         )}
 
-        <ThemedText type="default">Favorite albums</ThemedText>
+        <ThemedText style={textStyles.sectionTitle}>Favorite albums</ThemedText>
         {albums.length === 0 && !isOwn ? (
           <ThemedText style={styles.dim}>No favorite albums yet.</ThemedText>
         ) : (
@@ -234,10 +258,13 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
         )}
 
         {isOwn && recentSongs.length > 0 && (
-          <ThemedText type="default">Recent songs</ThemedText>
+          <ThemedText style={textStyles.sectionTitle}>Recent tracks</ThemedText>
         )}
         {isOwn && recentSongs.map((song) => (
-          <View key={`${song.id}-${song.played_at}`} style={styles.songRow}>
+          <View
+            key={`${song.id}-${song.played_at}`}
+            style={[styles.songRow, { backgroundColor: theme.backgroundElement }]}
+          >
             {song.image_url && (
               <Image source={{ uri: song.image_url }} style={styles.songCover} />
             )}
@@ -253,16 +280,16 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
           </View>
         ))}
 
-		{isOwn && (
-    	  <Pressable
-    		style={styles.logoutButton}
-    		onPress={confirmSignOut}
-  		  >
-    		<ThemedText style={styles.logoutText}>
-      		  Log out
-    		</ThemedText>
-  		  </Pressable>
-		)}
+        {isOwn && (
+          <Pressable
+            style={styles.logoutButton}
+            onPress={confirmSignOut}
+          >
+            <ThemedText style={[styles.logoutText, { color: theme.textSecondary }]}>
+              Log out
+            </ThemedText>
+          </Pressable>
+        )}
 
       </ScrollView>
     </ThemedView>
@@ -271,37 +298,36 @@ export function ProfileView({ userId, isOwn = false, onEditPress, bottomInset = 
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  content: { padding: 16, gap: 16 },
-  header: { gap: 8, marginBottom: 8 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four },
+  content: { padding: Spacing.three, gap: Spacing.three },
+  header: { gap: Spacing.two, marginBottom: Spacing.two },
   avatar: { width: 96, height: 96, borderRadius: 48 },
-  placeholder: { backgroundColor: 'rgba(128, 128, 128, 0.3)' },
+  placeholder: {},
   profileActions: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: Spacing.three,
   },
-  nameBox: { width: '50%', maxWidth: '50%' },
+  nameBox: { flex: 1, minWidth: 0 },
   name: {},
   bio: { opacity: 0.8 },
-  editButton: { alignSelf: 'flex-start', marginTop: 4 },
-  songRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(128, 128, 128, 0.3)', padding: 8, borderRadius: 6 },
+  editButton: { alignSelf: 'flex-start', marginTop: Spacing.one },
+  songRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, padding: Spacing.two, borderRadius: Radius.medium },
   songCover: { width: 64, height: 64 },
-  songText: { flex: 1, gap: 2 },
+  songText: { flex: 1, gap: Spacing.half },
   songLink: { alignSelf: 'flex-end' },
   songName: { fontWeight: '600' },
   dim: { opacity: 0.6 },
-  error: { color: '#c0392b', textAlign: 'center' },
+  error: { textAlign: 'center' },
   logoutButton: {
     alignSelf: 'center',
-    marginTop: 32,
-    marginBottom: 16,
-    paddingVertical: 8,
+    marginTop: Spacing.five,
+    marginBottom: Spacing.three,
+    paddingVertical: Spacing.two,
   },
   logoutText: {
     fontSize: 13,
-    color: '#888888',
     opacity: 0.7,
   },
 });

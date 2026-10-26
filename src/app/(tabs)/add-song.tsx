@@ -949,7 +949,7 @@ const rootRef = useRef<React.ComponentRef<typeof View>>(null);
       {/* Osynlig vy som bara används för att mäta sidans plats på skärmen. */}
       <View ref={rootRef} onLayout={measureBottomGap} style={StyleSheet.absoluteFill} pointerEvents="none" />
 
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <View style={styles.flex}>
           <Animated.FlatList
             // Sökresultaten syns bara medan man söker.
